@@ -1,4 +1,3 @@
-import { getUsuariosOpciones } from "@/app/(protected)/usuarios/actions";
 import { getSessionPermisos } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
@@ -7,10 +6,18 @@ import { redirect } from "next/navigation";
 import { getClienteById } from "../../actions";
 import { Formulario } from "../../components/Form";
 
-export default async function EditClientePage({ params }: { params: { id: string } }) {
+export default async function EditClientePage({ params }: { params: Promise<{ id: string }> }) {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("editar_cliente")) return <NoAcceso />;
-  const cliente = await getClienteById(params.id); if (!cliente) redirect('/clientes');
-  const usuarios = await getUsuariosOpciones();
-  return <div><HeaderComponent Icon={Pencil} screenName="Editar cliente" description="En este apartado podrás editar un cliente" /><Formulario isUpdate initialData={cliente} usuarios={usuarios} /></div>;
+
+  const { id } = await params;
+  const cliente = await getClienteById(id);
+  if (!cliente) redirect("/clientes");
+
+  return (
+    <div>
+      <HeaderComponent Icon={Pencil} screenName="Editar cliente" description="Actualiza los datos del cliente. La asignación se cambia desde Clientes / Asignaciones." />
+      <Formulario isUpdate initialData={cliente} />
+    </div>
+  );
 }

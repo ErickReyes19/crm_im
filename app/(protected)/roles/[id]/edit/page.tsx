@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 import { getRolPermisoById } from "../../actions";
 import { FormularioRol } from "../../components/Formulario";
 
-export default async function Edit({ params }: { params: { id: string } }) {
+export default async function Edit({ params }: { params: Promise<{ id: string }> }) {
   // Verificar si hay una sesión activa
 
   const permisos = await getSessionPermisos();
@@ -18,7 +18,8 @@ export default async function Edit({ params }: { params: { id: string } }) {
   }
 
   // Obtener el cliente por su ID
-  const roles = await getRolPermisoById(params.id);
+  const { id } = await params;
+  const roles = await getRolPermisoById(id);
   if (!roles) {
     redirect("/roles"); // Redirige si no se encuentra el cliente
   }

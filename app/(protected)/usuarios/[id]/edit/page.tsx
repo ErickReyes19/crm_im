@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 import { getUsuarioById } from "../../actions";
 import { Formulario } from "../../components/Form";
 
-export default async function Edit({ params }: { params: { id: string } }) {
+export default async function Edit({ params }: { params: Promise<{ id: string }> }) {
 
 
 
@@ -19,7 +19,8 @@ export default async function Edit({ params }: { params: { id: string } }) {
     return <NoAcceso />;
   }
 
-  const usuario = await getUsuarioById(params.id);
+  const { id } = await params;
+  const usuario = await getUsuarioById(id);
   const roles = await getRolesPermisosActivos();
 
 
