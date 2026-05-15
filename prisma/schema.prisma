@@ -59,6 +59,10 @@ model Usuarios {
   activo              Boolean              @db.Bit(1)
   rol                 Rol                  @relation(fields: [rol_id], references: [id])
   PasswordResetToken  PasswordResetToken[]
+  clientesAsignados   Cliente[]           @relation("UsuarioClientes")
+  ventas              Venta[]             @relation("UsuarioVentas")
+  tareasAsignadas     Tarea[]             @relation("UsuarioTareasAsignadas")
+  tareasCreadas       Tarea[]             @relation("UsuarioTareasCreadas")
 
   @@index([rol_id], map: "IX_Usuarios_rol_id")
 }
@@ -73,4 +77,76 @@ model PasswordResetToken {
   Usuario Usuarios @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId], map: "IX_PasswordResetToken_userId")
+}
+
+
+enum EtiquetaCliente {
+  NUEVO
+  INTERESADO
+}
+
+enum EstadoVenta {
+  PROCESO
+  ENVIO
+  ENTREGADA
+}
+
+enum EstadoTarea {
+  PENDIENTE
+  EN_PROGRESO
+  COMPLETADA
+}
+
+model Cliente {
+  id               String          @id @default(uuid())
+  nombre           String
+  apellido         String
+  ciudad           String
+  correo           String          @unique
+  numero           String
+  direccion        String
+  etiqueta         EtiquetaCliente @default(NUEVO)
+  usuarioAsignadoId String         @db.VarChar(36)
+  createAt         DateTime        @default(now())
+  updateAt         DateTime        @updatedAt
+  activo           Boolean         @default(true)
+
+  usuarioAsignado  Usuarios        @relation("UsuarioClientes", fields: [usuarioAsignadoId], references: [id])
+  ventas           Venta[]
+
+  @@index([usuarioAsignadoId], map: "IX_Cliente_usuarioAsignadoId")
+}
+
+model Venta {
+  id        String     @id @default(uuid())
+  clienteId String
+  usuarioId String     @db.VarChar(36)
+  total     Decimal    @db.Decimal(10, 2)
+  estado    EstadoVenta @default(PROCESO)
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+
+  cliente   Cliente    @relation(fields: [clienteId], references: [id])
+  usuario   Usuarios   @relation("UsuarioVentas", fields: [usuarioId], references: [id])
+
+  @@index([clienteId], map: "IX_Venta_clienteId")
+  @@index([usuarioId], map: "IX_Venta_usuarioId")
+}
+
+model Tarea {
+  id               String      @id @default(uuid())
+  nombre           String
+  descripcion      String
+  estado           EstadoTarea @default(PENDIENTE)
+  fechaFinalizacion DateTime
+  asignadoAId      String      @db.VarChar(36)
+  asignadoPorId    String      @db.VarChar(36)
+  createAt         DateTime    @default(now())
+  updateAt         DateTime    @updatedAt
+
+  asignadoA        Usuarios    @relation("UsuarioTareasAsignadas", fields: [asignadoAId], references: [id])
+  asignadoPor      Usuarios    @relation("UsuarioTareasCreadas", fields: [asignadoPorId], references: [id])
+
+  @@index([asignadoAId], map: "IX_Tarea_asignadoAId")
+  @@index([asignadoPorId], map: "IX_Tarea_asignadoPorId")
 }
