@@ -44,6 +44,6 @@ export async function loginWithCredentialsAction(
   return {
     ok: true,
     message: "Inicio de sesión exitoso.",
-    redirect: result.redirect ?? "/mi-perfil",
+    redirect: result.redirect ?? "/profile",
   };
 }

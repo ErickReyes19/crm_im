@@ -14,7 +14,7 @@ import Login from "./components/formLogin";
 
 export default async function LoginPage() {
   const session = await getSession();
-  if (session) redirect("/mi-perfil");
+  if (session) redirect("/profile");
 
   return (
     <main className="grid h-dvh overflow-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.12),transparent_32%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--secondary)/0.35)_100%)] lg:grid-cols-2">

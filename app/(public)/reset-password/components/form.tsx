@@ -30,7 +30,7 @@ export default function ResetPassword({ username }: { username: string }) {
         form.setError("nueva", { message: error });
         return;
       }
-      router.push("/mi-perfil");
+      router.push("/profile");
     });
   };
 
