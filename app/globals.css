@@ -71,6 +71,9 @@
 }
 
 :root {
+  --font-inter: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-playfair: Georgia, Cambria, "Times New Roman", serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.147 0.004 49.25);
   --popover: oklch(1 0 0);

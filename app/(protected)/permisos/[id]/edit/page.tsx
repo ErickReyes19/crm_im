@@ -6,11 +6,12 @@ import { redirect } from "next/navigation";
 import { getPermisoById } from "../../actions";
 import { FormularioPermiso } from "../../components/Formulario";
 
-export default async function EditPermisoPage({ params }: { params: { id: string } }) {
+export default async function EditPermisoPage({ params }: { params: Promise<{ id: string }> }) {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("editar_permisos")) return <NoAcceso />;
 
-  const permiso = await getPermisoById(params.id);
+  const { id } = await params;
+  const permiso = await getPermisoById(id);
   if (!permiso) {
     redirect("/permisos");
   }

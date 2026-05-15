@@ -507,7 +507,7 @@ function SidebarMenuButton({
   const Comp = asChild ? Slot.Root : "button"
   const { isMobile, state } = useSidebar()
   const isLink = !asChild && typeof props.href === "string"
-  const Element = isLink ? "a" : Comp
+  const Element: React.ElementType = isLink ? "a" : Comp
 
   const button = (
     <Element
@@ -516,7 +516,7 @@ function SidebarMenuButton({
       data-size={size}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-      {...props}
+      {...(props as Record<string, unknown>)}
     />
   )
 
