@@ -56,14 +56,14 @@ export default async function LoginPage() {
         </div>
 
         <div className="mb-4 flex items-center gap-3">
-          <Image
+          {/* <Image
             src="https://d3dr34vkycigpz.cloudfront.net/wp-content/uploads/2025/09/TiempoHonduras-1-2.webp"
             alt="Logo de Diario Tiempo"
             width={180}
             height={36}
             className="h-9 w-auto"
             priority
-          />
+          /> */}
         </div>
 
         <div className="w-full max-w-lg">

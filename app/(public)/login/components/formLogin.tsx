@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useFormState, useFormStatus } from "react-dom";
-
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,11 +40,10 @@ export default function Login() {
   const [openForgot, setOpenForgot] = useState(false);
   const [openRegister, setOpenRegister] = useState(false);
   const [isSubmittingRegister, setIsSubmittingRegister] = useState(false);
-  const [loginState, loginAction] = useFormState(
+  const [loginState, loginAction] = useActionState(
     loginWithCredentialsAction,
     initialLoginState
-  );
-  const [showPassword, setShowPassword] = useState(false);
+  ); const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (loginState.ok && loginState.redirect) {
@@ -129,9 +128,8 @@ export default function Login() {
 
           {loginState.message ? (
             <p
-              className={`text-sm ${
-                loginState.ok ? "text-green-600" : "text-destructive"
-              }`}
+              className={`text-sm ${loginState.ok ? "text-green-600" : "text-destructive"
+                }`}
             >
               {loginState.message}
             </p>

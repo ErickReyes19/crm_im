@@ -70,13 +70,13 @@ export async function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="flex justify-between items-center">
-            <Image
+            {/* <Image
               src="https://d3dr34vkycigpz.cloudfront.net/wp-content/uploads/2025/09/TiempoHonduras-1-2.webp"
               alt="Logo de Tiempo Honduras"
               width={180}
               height={36}
               className="h-9 w-auto"
-            />
+            /> */}
             <ModeToggle></ModeToggle>
           </SidebarGroupLabel>
 

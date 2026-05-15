@@ -35,7 +35,7 @@ export async function loginWithCredentialsAction(
     usuario = userByEmail.usuario;
   }
 
-  const result = await login({ usuario, contrasena }, "/mi-perfil");
+  const result = await login({ usuario, contrasena }, "/profile");
 
   if (result.error) {
     return { ok: false, message: "Usuario/correo o contraseña inválidos." };
