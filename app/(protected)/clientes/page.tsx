@@ -1,12 +1,15 @@
 import { getSessionPermisos } from "@/auth";
-import NoAcceso from "@/components/noAccess";
 import HeaderComponent from "@/components/HeaderComponent";
-import { Users } from "lucide-react";
+import NoAcceso from "@/components/noAccess";
+import { ListCheck } from "lucide-react";
 import { getClientes } from "./actions";
+import ClientesListMobile from "./components/clientes-list-mobile";
+import { columns } from "./components/columns";
+import { DataTable } from "./components/data-table";
 
 export default async function ClientesPage() {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("ver_clientes")) return <NoAcceso />;
-  const clientes = await getClientes();
-  return <div className="container mx-auto py-2"><HeaderComponent Icon={Users} screenName="Clientes" description="Gestión de clientes" /><div className="rounded-md border p-4 text-sm">Total clientes: {clientes.length}</div></div>;
+  const data = await getClientes();
+  return <div className="container mx-auto py-2"><HeaderComponent Icon={ListCheck} description="En este apartado podrá ver todos los clientes" screenName="Clientes" /><div className="hidden md:block"><DataTable columns={columns} data={data} /></div><div className="block md:hidden"><ClientesListMobile clientes={data} /></div></div>;
 }

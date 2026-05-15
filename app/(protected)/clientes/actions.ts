@@ -52,3 +52,8 @@ export async function updateCliente(data: Cliente) {
 export async function transferirCliente(clienteId: string, usuarioAsignadoId: string) {
   return prisma.cliente.update({ where: { id: clienteId }, data: { usuarioAsignadoId } });
 }
+
+
+export async function getClientesOpciones() {
+  return prisma.cliente.findMany({ select: { id: true, nombre: true, apellido: true }, where: { activo: true }, orderBy: { nombre: "asc" } });
+}
