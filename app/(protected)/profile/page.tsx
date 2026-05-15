@@ -15,23 +15,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="container mx-auto py-2 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <HeaderComponent Icon={User} description="Resumen de tu cuenta, suscripciones, facturas y pagos" screenName="Mi Perfil" />
-        <Button asChild>
-          <Link href="/checkout">Comprar con PixelPay</Link>
-        </Button>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader><CardTitle className="text-sm text-muted-foreground">Usuario</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">{session.User}</p>
-            <p className="text-sm text-muted-foreground">Rol: {session.Rol}</p>
-          </CardContent>
-        </Card>
-
-      </div>
+      <HeaderComponent screenName="Perfil de Usuario" Icon={User } description="Perfil del usuario" />
     </div>
   );
 }
