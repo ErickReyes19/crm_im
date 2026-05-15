@@ -40,11 +40,9 @@ export async function AppSidebar() {
             <SidebarMenu>
               {filteredModules.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon size={16} />
-                      <span>{item.title}</span>
-                    </a>
+                  <SidebarMenuButton href={item.url}>
+                    <item.icon size={16} />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
