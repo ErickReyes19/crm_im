@@ -2,15 +2,16 @@ import { z } from "zod";
 
 export const ClienteSchema = z.object({
   id: z.string().optional(),
-  nombre: z.string().min(1),
-  apellido: z.string().min(1),
-  ciudad: z.string().min(1),
-  correo: z.email(),
-  numero: z.string().min(1),
-  direccion: z.string().min(1),
+  nombre: z.string().min(1, "El nombre es requerido"),
+  apellido: z.string().min(1, "El apellido es requerido"),
+  ciudad: z.string().min(1, "La ciudad es requerida"),
+  correo: z.email("Ingresa un correo válido"),
+  numero: z.string().min(1, "El número de contacto es requerido"),
+  direccion: z.string().min(1, "La dirección es requerida"),
   etiqueta: z.enum(["NUEVO", "INTERESADO"]),
-  usuarioAsignadoId: z.string().min(1),
+  usuarioAsignadoId: z.string().optional(),
   activo: z.boolean().default(true),
 });
 
-export type Cliente = z.infer<typeof ClienteSchema>;
+export type Cliente = z.output<typeof ClienteSchema>;
+export type ClienteFormValues = z.input<typeof ClienteSchema>;
