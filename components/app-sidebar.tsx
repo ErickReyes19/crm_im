@@ -14,6 +14,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { KeyRound, LayersIcon, UserIcon } from "lucide-react";
+import Link from "next/link";
 
 const modules = [
   { title: "Usuarios", url: "/usuarios", icon: UserIcon, permiso: "ver_usuarios" },
@@ -41,10 +42,10 @@ export async function AppSidebar() {
               {filteredModules.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild tooltip={item.title}>
-                    <a href={item.url}>
+                    <Link href={item.url}>
                       <item.icon size={16} />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
