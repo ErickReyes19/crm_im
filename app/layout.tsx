@@ -4,9 +4,9 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Diario Tiempo | Periodismo digital de confianza",
+  title: "Importaciones Mia",
   description:
-    "Accede a la edicion digital diaria, contenido premium y periodismo verificado. Suscribete a Diario Tiempo.",
+    "Administra tus clientes, ventas y usuarios de manera eficiente con Importaciones Mia, tu CRM de confianza.",
 };
 
 export const viewport: Viewport = {

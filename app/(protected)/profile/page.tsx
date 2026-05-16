@@ -1,10 +1,7 @@
 import { getSession } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { User } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 
 export default async function ProfilePage() {
   const session = await getSession();

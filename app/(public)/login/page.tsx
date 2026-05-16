@@ -19,13 +19,13 @@ export default async function LoginPage() {
   return (
     <main className="grid h-dvh overflow-hidden bg-[radial-gradient(circle_at_top_right,hsl(var(--accent)/0.12),transparent_32%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--secondary)/0.35)_100%)] lg:grid-cols-2">
       <section className="relative hidden h-full overflow-hidden lg:block">
-        <Image
+        {/* <Image
           src="/images/login.png"
           alt="Escena editorial con periódico y café"
           fill
           className="object-cover"
           priority
-        />
+        /> */}
         <div className="absolute inset-0 bg-linear-to-tr from-foreground/75 via-foreground/45 to-accent/35" />
         <div className="absolute inset-0 flex flex-col justify-between p-12">
           <p className="inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-white/90 backdrop-blur">
