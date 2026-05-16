@@ -34,7 +34,7 @@ export const columns: ColumnDef<VentaTableRow>[] = [
   {
     accessorKey: "total",
     header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Total <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
-    cell: ({ row }) => Number(row.original.total).toLocaleString("es-DO", { style: "currency", currency: "DOP" }),
+    cell: ({ row }) => Number(row.original.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" }),
   },
   {
     id: "productosResumen",

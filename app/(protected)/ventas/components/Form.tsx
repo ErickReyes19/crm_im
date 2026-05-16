@@ -77,7 +77,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
         <Field className="max-w-[240px]">
           <FieldLabel>Total de la venta</FieldLabel>
-          <FieldContent><Input readOnly value={total.toLocaleString("es-DO", { style: "currency", currency: "DOP" })} /></FieldContent>
+          <FieldContent><Input readOnly value={total.toLocaleString("es-DO", { style: "currency", currency: "HNL" })} /></FieldContent>
           <FieldDescription>Se calcula según productos y cantidades.</FieldDescription>
         </Field>
       </div>
@@ -103,7 +103,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
               <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Producto</FieldLabel>
-                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre} - {producto.precio.toLocaleString("es-DO", { style: "currency", currency: "DOP" })}</SelectItem>)}</SelectContent></Select></FieldContent>
+                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre} - {producto.precio.toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</SelectItem>)}</SelectContent></Select></FieldContent>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )} />
@@ -118,7 +118,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
               <Field>
                 <FieldLabel>Subtotal</FieldLabel>
-                <FieldContent><Input readOnly value={subtotal.toLocaleString("es-DO", { style: "currency", currency: "DOP" })} /></FieldContent>
+                <FieldContent><Input readOnly value={subtotal.toLocaleString("es-DO", { style: "currency", currency: "HNL" })} /></FieldContent>
               </Field>
 
               <Button type="button" variant="outline" className="mt-0 md:mt-7" onClick={() => remove(index)} disabled={fields.length === 1}><Trash2 className="h-4 w-4" /></Button>

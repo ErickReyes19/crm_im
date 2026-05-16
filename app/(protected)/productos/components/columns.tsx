@@ -17,7 +17,7 @@ export const columns: ColumnDef<ProductoTableRow>[] = [
   {
     accessorKey: "precio",
     header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Precio <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
-    cell: ({ row }) => Number(row.original.precio).toLocaleString("es-DO", { style: "currency", currency: "DOP" }),
+    cell: ({ row }) => Number(row.original.precio).toLocaleString("es-DO", { style: "currency", currency: "HNL" }),
   },
   { accessorKey: "activo", header: "Estado", cell: ({ row }) => row.original.activo ? "Activo" : "Inactivo" },
   { id: "creadoPor", accessorFn: (producto) => producto.creadoPor?.usuario ?? "", header: "Creado por", cell: ({ row }) => row.original.creadoPor?.usuario ?? "-" },

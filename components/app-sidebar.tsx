@@ -27,7 +27,6 @@ const modules: SidebarModule[] = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3, permisos: ["ver_dashboard", "ver_ventas"] },
   { title: "Usuarios", url: "/usuarios", icon: UserIcon, permiso: "ver_usuarios" },
   { title: "Roles", url: "/roles", icon: LayersIcon, permiso: "ver_roles" },
-  { title: "Permisos", url: "/permisos", icon: KeyRound, permiso: "ver_permisos" },
   { title: "Clientes", url: "/clientes", icon: Users, permiso: "ver_clientes" },
   { title: "Asignaciones", url: "/clientes/asignaciones", icon: UserRoundCheck, permiso: "asignar_clientes" },
   { title: "Productos", url: "/productos", icon: Package, permiso: "ver_productos" },
