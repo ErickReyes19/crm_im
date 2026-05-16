@@ -13,7 +13,23 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function ModeToggle() {
+  const [mounted, setMounted] = React.useState(false)
   const { setTheme } = useTheme()
+
+  React.useEffect(() => {
+    const id = window.setTimeout(() => setMounted(true), 0)
+
+    return () => window.clearTimeout(id)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon" disabled aria-label="Cargando tema">
+        <Sun className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">Cargando tema</span>
+      </Button>
+    )
+  }
 
   return (
     <DropdownMenu>
