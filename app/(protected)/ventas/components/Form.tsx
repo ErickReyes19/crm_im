@@ -15,9 +15,8 @@ import { VentaFormValues, VentaSchema } from "../schema";
 
 type VentaFormOutput = z.output<typeof VentaSchema>;
 type ClienteOpcion = { id: string; nombre: string; apellido: string };
-type UsuarioOpcion = { id: string; usuario: string };
 
-export function Formulario({ isUpdate, initialData, clientes, usuarios }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; usuarios: UsuarioOpcion[] }) {
+export function Formulario({ isUpdate, initialData, clientes }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[] }) {
   const router = useRouter();
   const form = useForm<VentaFormValues, unknown, VentaFormOutput>({ resolver: zodResolver(VentaSchema), defaultValues: initialData });
 
@@ -32,28 +31,28 @@ export function Formulario({ isUpdate, initialData, clientes, usuarios }: { isUp
       }
       router.push("/ventas");
       router.refresh();
-    } catch {
-      toast.error("Error al guardar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al guardar.");
     }
   }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 rounded-xl border bg-card p-4 shadow-sm md:p-6">
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         <Controller name="clienteId" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid} className="max-w-sm">
-            <FieldLabel>Cliente</FieldLabel>
-            <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona cliente" /></SelectTrigger><SelectContent>{clientes.map((cliente) => <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre} {cliente.apellido}</SelectItem>)}</SelectContent></Select></FieldContent>
-            <FieldDescription>Cliente asociado a la venta.</FieldDescription>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
-
-        <Controller name="usuarioId" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="max-w-sm">
-            <FieldLabel>Usuario</FieldLabel>
-            <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona usuario" /></SelectTrigger><SelectContent>{usuarios.map((usuario) => <SelectItem key={usuario.id} value={usuario.id}>{usuario.usuario}</SelectItem>)}</SelectContent></Select></FieldContent>
-            <FieldDescription>Responsable de la venta.</FieldDescription>
+            <FieldLabel>Cliente asignado</FieldLabel>
+            <FieldContent>
+              <Select value={field.value} onValueChange={field.onChange} disabled={clientes.length === 0}>
+                <SelectTrigger>
+                  <SelectValue placeholder={clientes.length === 0 ? "No tienes clientes asignados" : "Selecciona cliente"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientes.map((cliente) => <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre} {cliente.apellido}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </FieldContent>
+            <FieldDescription>Solo aparecen los clientes asignados a tu usuario.</FieldDescription>
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )} />
@@ -79,7 +78,7 @@ export function Formulario({ isUpdate, initialData, clientes, usuarios }: { isUp
 
       <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={() => router.push("/ventas")}>Cancelar</Button>
-        <Button type="submit" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
+        <Button type="submit" disabled={form.formState.isSubmitting || clientes.length === 0}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
       </div>
     </form>
   );

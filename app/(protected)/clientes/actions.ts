@@ -68,7 +68,7 @@ export async function asignarClientesAUsuario(usuarioId: string, clienteIds: str
 
   const idsSeleccionados = [...new Set(clienteIds.filter(Boolean))];
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: { cliente: { updateMany: typeof prisma.cliente.updateMany } }) => {
     if (idsSeleccionados.length > 0) {
       await tx.cliente.updateMany({
         where: { id: { in: idsSeleccionados } },
@@ -94,5 +94,16 @@ export async function getClientesOpciones() {
     select: { id: true, nombre: true, apellido: true },
     where: { activo: true },
     orderBy: { nombre: "asc" },
+  });
+}
+
+export async function getClientesAsignadosOpciones() {
+  const session = await getSession();
+  if (!session?.IdUser) throw new Error("Sesión requerida para consultar clientes asignados");
+
+  return prisma.cliente.findMany({
+    select: { id: true, nombre: true, apellido: true },
+    where: { usuarioAsignadoId: session.IdUser },
+    orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
   });
 }
