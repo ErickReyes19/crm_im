@@ -5,11 +5,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import { Venta } from "../schema";
-
-export type VentaTableRow = Venta & {
+export type VentaTableRow = {
+  id?: string;
+  clienteId: string;
+  total?: number;
+  estado: "PROCESO" | "ENVIO" | "ENTREGADA";
   cliente?: { nombre: string; apellido: string } | null;
   usuario?: { usuario: string } | null;
+  productos?: Array<{ cantidad: number; subtotal: number; producto?: { nombre: string } | null }>;
 };
 
 export const columns: ColumnDef<VentaTableRow>[] = [
@@ -32,6 +35,11 @@ export const columns: ColumnDef<VentaTableRow>[] = [
     accessorKey: "total",
     header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Total <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
     cell: ({ row }) => Number(row.original.total).toLocaleString("es-DO", { style: "currency", currency: "DOP" }),
+  },
+  {
+    id: "productosResumen",
+    header: "Productos",
+    cell: ({ row }) => row.original.productos?.length ? row.original.productos.map((detalle) => `${detalle.cantidad} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ") : "Sin productos",
   },
   { accessorKey: "estado", header: "Estado" },
   {

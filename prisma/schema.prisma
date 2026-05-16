@@ -61,6 +61,7 @@ model Usuarios {
   PasswordResetToken  PasswordResetToken[]
   clientesAsignados   Cliente[]           @relation("UsuarioClientes")
   ventas              Venta[]             @relation("UsuarioVentas")
+  productos           Producto[]          @relation("UsuarioProductos")
   tareasAsignadas     Tarea[]             @relation("UsuarioTareasAsignadas")
   tareasCreadas       Tarea[]             @relation("UsuarioTareasCreadas")
 
@@ -117,6 +118,23 @@ model Cliente {
   @@index([usuarioAsignadoId], map: "IX_Cliente_usuarioAsignadoId")
 }
 
+model Producto {
+  id            String          @id @default(uuid())
+  nombre        String
+  descripcion   String
+  precio        Decimal         @db.Decimal(10, 2)
+  activo        Boolean         @default(true)
+  creadoPorId   String          @db.VarChar(36)
+  createAt      DateTime        @default(now())
+  updateAt      DateTime        @updatedAt
+
+  creadoPor      Usuarios       @relation("UsuarioProductos", fields: [creadoPorId], references: [id])
+  ventas         VentaProducto[]
+  tareasObjetivo TareaProducto[]
+
+  @@index([creadoPorId], map: "IX_Producto_creadoPorId")
+}
+
 model Venta {
   id        String     @id @default(uuid())
   clienteId String
@@ -128,9 +146,26 @@ model Venta {
 
   cliente   Cliente    @relation(fields: [clienteId], references: [id])
   usuario   Usuarios   @relation("UsuarioVentas", fields: [usuarioId], references: [id])
+  productos VentaProducto[]
 
   @@index([clienteId], map: "IX_Venta_clienteId")
   @@index([usuarioId], map: "IX_Venta_usuarioId")
+}
+
+model VentaProducto {
+  id             String   @id @default(uuid())
+  ventaId        String
+  productoId     String
+  cantidad       Int
+  precioUnitario Decimal  @db.Decimal(10, 2)
+  subtotal       Decimal  @db.Decimal(10, 2)
+  createAt       DateTime @default(now())
+
+  venta          Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  producto       Producto @relation(fields: [productoId], references: [id])
+
+  @@index([ventaId], map: "IX_VentaProducto_ventaId")
+  @@index([productoId], map: "IX_VentaProducto_productoId")
 }
 
 model Tarea {
@@ -146,7 +181,23 @@ model Tarea {
 
   asignadoA        Usuarios    @relation("UsuarioTareasAsignadas", fields: [asignadoAId], references: [id])
   asignadoPor      Usuarios    @relation("UsuarioTareasCreadas", fields: [asignadoPorId], references: [id])
+  productosObjetivo TareaProducto[]
 
   @@index([asignadoAId], map: "IX_Tarea_asignadoAId")
   @@index([asignadoPorId], map: "IX_Tarea_asignadoPorId")
+}
+
+
+model TareaProducto {
+  id               String   @id @default(uuid())
+  tareaId          String
+  productoId       String
+  cantidadObjetivo Int
+  createAt         DateTime @default(now())
+
+  tarea            Tarea    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
+  producto         Producto @relation(fields: [productoId], references: [id])
+
+  @@index([tareaId], map: "IX_TareaProducto_tareaId")
+  @@index([productoId], map: "IX_TareaProducto_productoId")
 }
