@@ -11,11 +11,11 @@ export default async function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-4 py-12 text-white">
+ 
       <div className="mx-auto flex w-full max-w-4xl items-center justify-center">
         <section className="w-full overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-sm">
           <div className="grid gap-0 md:grid-cols-2">
-            <div className="hidden bg-gradient-to-br from-cyan-500/20 to-indigo-500/20 p-8 md:block">
+            <div className="hidden bg-linear-to-br from-cyan-500/20 to-indigo-500/20 p-8 md:block">
               <div className="flex h-full flex-col justify-between">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-100">
                   <ShieldCheck className="h-4 w-4" />
@@ -43,6 +43,5 @@ export default async function Page() {
           </div>
         </section>
       </div>
-    </main>
   );
 }

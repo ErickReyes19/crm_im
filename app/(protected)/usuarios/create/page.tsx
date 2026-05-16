@@ -25,7 +25,7 @@ export default async function Create() {
   const roles = await getRolesPermisosActivos();
 
   return (
-    <div>
+    <div className="w-full p-2 m-4">
       <HeaderComponent
         Icon={PlusCircle}
         description="En este apartado podrás crear un nuevo usuario"

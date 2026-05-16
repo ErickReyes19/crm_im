@@ -28,7 +28,7 @@ export default async function Create() {
 
 
   return (
-    <div>
+    <div className="w-full m-4">
       <HeaderComponent
         Icon={PlusCircle}
         description="En este apartado podrá crear un rol y asignarle permisos."

@@ -11,5 +11,9 @@ export default async function CreateVentaPage() {
   if (!permisos?.includes("crear_venta")) return <NoAcceso />;
   const clientes = await getClientesOpciones(); const usuarios = await getUsuariosOpciones();
   const initialData = { clienteId: clientes[0]?.id ?? "", usuarioId: usuarios[0]?.id ?? "", total: 0, estado: "PROCESO" as const };
-  return <div><HeaderComponent Icon={PlusCircle} screenName="Crear venta" description="En este apartado podrás crear una venta" /><Formulario isUpdate={false} initialData={initialData} clientes={clientes} usuarios={usuarios} /></div>;
+
+  return <div className="w-full m-2">
+    <HeaderComponent Icon={PlusCircle} screenName="Crear venta" description="En este apartado podrás crear una venta" />
+    <Formulario isUpdate={false} initialData={initialData} clientes={clientes} usuarios={usuarios} />
+  </div>;
 }

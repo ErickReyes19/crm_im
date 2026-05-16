@@ -70,7 +70,7 @@ export function Formulario({ isUpdate, initialData, usuarios }: { isUpdate: bool
           name="fechaFinalizacion"
           control={form.control}
           render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="max-w-[220px]">
+            <Field data-invalid={fieldState.invalid} className="max-w-55">
               <FieldLabel>Fecha finalización</FieldLabel>
               <FieldContent>
                 <Input type="date" value={toDateInputValue(field.value)} onChange={(event) => field.onChange(event.target.value)} />
@@ -85,7 +85,7 @@ export function Formulario({ isUpdate, initialData, usuarios }: { isUpdate: bool
           name="estado"
           control={form.control}
           render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="max-w-[240px]">
+            <Field data-invalid={fieldState.invalid} className="max-w-60">
               <FieldLabel>Estado</FieldLabel>
               <FieldContent>
                 <Select value={field.value} onValueChange={field.onChange}>

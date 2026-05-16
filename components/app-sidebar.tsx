@@ -32,7 +32,7 @@ export async function AppSidebar() {
   const filteredModules = modules.filter((item) => permisosUsuario.includes(item.permiso));
 
   return (
-    <Sidebar collapsible="icon" variant="sidebar" className="border-r bg-sidebar">
+    <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="mb-2 flex items-center justify-between text-sidebar-foreground">

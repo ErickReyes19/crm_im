@@ -23,10 +23,8 @@ export default async function Layout({ children }: { children: React.ReactNode }
 
       <SidebarProvider>
         <AppSidebar />
-        <main className="w-full p-2">
           <SidebarTrigger />
           {children}
-        </main>
       </SidebarProvider>
     </ThemeProvider>
   );
