@@ -13,9 +13,18 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { ClipboardList, HandCoins, LayersIcon, Package, UserIcon, Users, UserRoundCheck } from "lucide-react";
+import { BarChart3, ClipboardList, HandCoins, KeyRound, LayersIcon, Package, UserIcon, Users, UserRoundCheck, type LucideIcon } from "lucide-react";
 
-const modules = [
+type SidebarModule = {
+  title: string;
+  url: string;
+  icon: LucideIcon;
+  permiso?: string;
+  permisos?: string[];
+};
+
+const modules: SidebarModule[] = [
+  { title: "Dashboard", url: "/dashboard", icon: BarChart3, permisos: ["ver_dashboard", "ver_ventas"] },
   { title: "Usuarios", url: "/usuarios", icon: UserIcon, permiso: "ver_usuarios" },
   { title: "Roles", url: "/roles", icon: LayersIcon, permiso: "ver_roles" },
   { title: "Clientes", url: "/clientes", icon: Users, permiso: "ver_clientes" },
@@ -29,7 +38,7 @@ export async function AppSidebar() {
   const usuario = await getSession();
   const permisosUsuario = usuario?.Permiso || [];
 
-  const filteredModules = modules.filter((item) => permisosUsuario.includes(item.permiso));
+  const filteredModules = modules.filter((item) => item.permisos?.some((permiso) => permisosUsuario.includes(permiso)) ?? (item.permiso ? permisosUsuario.includes(item.permiso) : false));
 
   return (
     <Sidebar collapsible="icon" variant="floating">

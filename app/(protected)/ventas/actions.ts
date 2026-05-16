@@ -6,7 +6,11 @@ import { revalidatePath } from "next/cache";
 import { Venta } from "./schema";
 
 export async function getVentas() {
+  const session = await getCurrentUser();
+  const puedeVerTodas = session.Permiso?.includes("ver_todas_ventas") ?? false;
+
   return prisma.venta.findMany({
+    where: puedeVerTodas ? undefined : { usuarioId: session.IdUser },
     include: {
       cliente: true,
       usuario: { select: { usuario: true } },
@@ -17,8 +21,11 @@ export async function getVentas() {
 }
 
 export async function getVentaById(id: string) {
-  return prisma.venta.findUnique({
-    where: { id },
+  const session = await getCurrentUser();
+  const puedeVerTodas = session.Permiso?.includes("ver_todas_ventas") ?? false;
+
+  return prisma.venta.findFirst({
+    where: { id, ...(puedeVerTodas ? {} : { usuarioId: session.IdUser }) },
     include: { productos: { include: { producto: { select: { id: true, nombre: true, precio: true } } } } },
   });
 }
@@ -27,6 +34,17 @@ async function getCurrentUser() {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para registrar ventas");
   return session;
+}
+
+
+async function assertVentaAccesible(ventaId: string, usuarioId: string, permisos: string[] | undefined) {
+  const puedeVerTodas = permisos?.includes("ver_todas_ventas") ?? false;
+  const venta = await prisma.venta.findFirst({
+    where: { id: ventaId, ...(puedeVerTodas ? {} : { usuarioId }) },
+    select: { id: true },
+  });
+
+  if (!venta) throw new Error("No tienes acceso a esta venta");
 }
 
 async function assertClienteAsignado(clienteId: string, usuarioId: string) {
@@ -80,13 +98,15 @@ export async function createVenta(data: Venta) {
   });
 
   revalidatePath("/ventas");
-  return venta;
+  revalidatePath("/dashboard");
+  return { id: venta.id, total: Number(venta.total) };
 }
 
 export async function updateVenta(data: Venta) {
   if (!data.id) throw new Error("ID de venta requerido");
 
   const session = await getCurrentUser();
+  await assertVentaAccesible(data.id, session.IdUser, session.Permiso);
   await assertClienteAsignado(data.clienteId, session.IdUser);
   const { detalles, total } = await buildVentaProductos(data.productos);
 
@@ -105,5 +125,6 @@ export async function updateVenta(data: Venta) {
   });
 
   revalidatePath("/ventas");
-  return venta;
+  revalidatePath("/dashboard");
+  return { id: venta.id, total: Number(venta.total) };
 }
