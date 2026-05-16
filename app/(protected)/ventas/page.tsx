@@ -11,7 +11,7 @@ export default async function VentasPage() {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("ver_ventas")) return <NoAcceso />;
 
-  const data = (await getVentas()).map((venta) => ({ ...venta, total: Number(venta.total) }));
+  const data = (await getVentas()).map((venta: Awaited<ReturnType<typeof getVentas>>[number]) => ({ ...venta, total: Number(venta.total) }));
 
   return (
     <div className="container mx-auto py-2">
