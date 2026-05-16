@@ -16,7 +16,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
     <SidebarProvider>
       <AppSidebar />
       <SidebarTrigger />
-      {children}
+      <main className="w-full mx-8">
+
+        {children}
+      </main>
     </SidebarProvider>
   );
 }
