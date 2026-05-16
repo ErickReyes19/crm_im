@@ -2,6 +2,7 @@
 "use server";
 import { prisma } from "@/lib/prisma"; // Asegúrate de importar correctamente tu cliente de Prisma
 import { randomUUID } from "crypto";
+import { revalidatePath } from "next/cache";
 import { PermisosRol, Rol as RolDTO } from "./schema";
 
 export async function getRolesPermisos(): Promise<RolDTO[]> {
@@ -91,6 +92,9 @@ export async function putRol({ rol }: { rol: RolDTO }): Promise<RolDTO | null> {
       },
     });
 
+    revalidatePath("/roles");
+    revalidatePath("/usuarios");
+
     // Mapear la respuesta de Prisma a tu DTO
     return {
       id: updated.id,
@@ -172,6 +176,9 @@ export async function postRol({
         },
       },
     });
+
+    revalidatePath("/roles");
+    revalidatePath("/usuarios");
 
     // Mapeamos a tu DTO RolDTO
     return {

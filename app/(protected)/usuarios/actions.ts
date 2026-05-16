@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { EmailService, MailPayload } from "@/lib/sendEmail";
 import { generateUserCreatedEmailHtml } from "@/lib/templates/createUserEmail";
 import bcrypt from "bcryptjs";
+import { revalidatePath } from "next/cache";
 import { randomBytes, randomUUID } from "crypto";
 import { Usuario } from "./schema";
 
@@ -75,6 +76,8 @@ export async function createUsuario(data: Usuario): Promise<CreateUsuarioResult>
     }
   }
 
+  revalidatePath("/usuarios");
+
   return {
     usuario: {
       id: newUser.id,
@@ -106,6 +109,8 @@ export async function updateUsuario(data: Usuario): Promise<Usuario> {
       email: data.email,
     },
   });
+  revalidatePath("/usuarios");
+
   return {
     id: updated.id,
     usuario: updated.usuario,

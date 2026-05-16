@@ -4,6 +4,13 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Tarea } from "./schema";
 
+const ESTADOS_TAREA = ["PENDIENTE", "EN_PROGRESO", "COMPLETADA"] as const;
+type EstadoTarea = (typeof ESTADOS_TAREA)[number];
+
+function isEstadoTarea(value: string): value is EstadoTarea {
+  return ESTADOS_TAREA.includes(value as EstadoTarea);
+}
+
 export async function getTareas() {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para consultar tareas");
@@ -86,6 +93,38 @@ export async function updateTarea(data: Tarea) {
         productosObjetivo: { create: tareaProductosData(data.productosObjetivo) },
       },
     });
+  });
+
+  revalidatePath("/tareas");
+  return tarea;
+}
+
+
+export async function updateTareaEstado(id: string, estado: EstadoTarea) {
+  if (!id) throw new Error("ID de tarea requerido");
+  if (!isEstadoTarea(estado)) throw new Error("Estado de tarea inválido");
+
+  const session = await getSession();
+  if (!session?.IdUser) throw new Error("Sesión requerida para actualizar tareas");
+
+  const puedeVerTodas = session.Permiso?.includes("ver_todas_tareas") ?? false;
+  const tareaAccesible = await prisma.tarea.findFirst({
+    where: { id, ...(puedeVerTodas ? {} : { asignadoAId: session.IdUser }) },
+    select: { id: true, asignadoAId: true },
+  });
+
+  if (!tareaAccesible) throw new Error("No tienes acceso a esta tarea");
+
+  const puedeEditar = session.Permiso?.includes("editar_tarea") ?? false;
+  const esAsignado = tareaAccesible.asignadoAId === session.IdUser;
+
+  if (!puedeEditar && !esAsignado) {
+    throw new Error("No tienes permiso para cambiar el estado de esta tarea");
+  }
+
+  const tarea = await prisma.tarea.update({
+    where: { id },
+    data: { estado },
   });
 
   revalidatePath("/tareas");

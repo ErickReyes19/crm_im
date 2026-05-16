@@ -38,7 +38,7 @@ export async function createCliente(data: Cliente) {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para crear clientes");
 
-  return prisma.cliente.create({
+  const cliente = await prisma.cliente.create({
     data: {
       nombre: data.nombre,
       apellido: data.apellido,
@@ -51,6 +51,9 @@ export async function createCliente(data: Cliente) {
       activo: true,
     },
   });
+
+  revalidatePath("/clientes");
+  return cliente;
 }
 
 export async function updateCliente(data: Cliente) {
@@ -66,7 +69,7 @@ export async function updateCliente(data: Cliente) {
   });
   if (!cliente) throw new Error("No tienes acceso a este cliente");
 
-  return prisma.cliente.update({
+  const clienteActualizado = await prisma.cliente.update({
     where: { id: data.id },
     data: {
       nombre: data.nombre,
@@ -79,6 +82,9 @@ export async function updateCliente(data: Cliente) {
       activo: data.activo,
     },
   });
+
+  revalidatePath("/clientes");
+  return clienteActualizado;
 }
 
 export async function transferirCliente(clienteId: string, usuarioAsignadoId: string) {
