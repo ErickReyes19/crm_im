@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
+import { revalidatePath } from "next/cache";
 import { PermisosRol } from "../roles/schema";
 import { Permiso as PermisoDTO } from "./schema";
 
@@ -52,6 +53,9 @@ export async function createPermiso(payload: PermisoDTO): Promise<PermisoDTO | n
       },
     });
 
+    revalidatePath("/permisos");
+    revalidatePath("/roles");
+
     return {
       id: created.id,
       nombre: created.nombre,
@@ -76,6 +80,9 @@ export async function updatePermiso(payload: PermisoDTO): Promise<PermisoDTO | n
         activo: payload.activo,
       },
     });
+
+    revalidatePath("/permisos");
+    revalidatePath("/roles");
 
     return {
       id: updated.id,
