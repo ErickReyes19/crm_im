@@ -5,11 +5,17 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
-import { Tarea } from "../schema";
-
-export type TareaTableRow = Tarea & {
+export type TareaTableRow = {
+  id?: string;
+  nombre: string;
+  descripcion: string;
+  estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA";
+  fechaFinalizacion: Date | string;
+  asignadoAId: string;
+  asignadoPorId: string;
   asignadoA?: { usuario: string } | null;
   asignadoPor?: { usuario: string } | null;
+  productosObjetivo?: Array<{ cantidadObjetivo: number; producto?: { nombre: string } | null }>;
 };
 
 export const columns: ColumnDef<TareaTableRow>[] = [
@@ -37,6 +43,11 @@ export const columns: ColumnDef<TareaTableRow>[] = [
     accessorFn: (tarea) => tarea.asignadoPor?.usuario ?? "",
     header: "Asignado por",
     cell: ({ row }) => row.original.asignadoPor?.usuario ?? "Sin usuario",
+  },
+  {
+    id: "productosObjetivoResumen",
+    header: "Objetivo productos",
+    cell: ({ row }) => row.original.productosObjetivo?.length ? row.original.productosObjetivo.map((detalle) => `${detalle.cantidadObjetivo} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ") : "Sin objetivo",
   },
   {
     accessorKey: "fechaFinalizacion",

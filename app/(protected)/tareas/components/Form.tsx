@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createTarea, updateTarea } from "../actions";
@@ -17,6 +17,7 @@ import { TareaFormValues, TareaSchema } from "../schema";
 type TareaFormOutput = z.output<typeof TareaSchema>;
 
 type UsuarioOpcion = { id: string; usuario: string };
+type ProductoOpcion = { id: string; nombre: string; precio: number };
 
 function toDateInputValue(value: unknown) {
   if (!value) return "";
@@ -25,12 +26,13 @@ function toDateInputValue(value: unknown) {
   return date.toISOString().split("T")[0];
 }
 
-export function Formulario({ isUpdate, initialData, usuarios }: { isUpdate: boolean; initialData?: TareaFormValues; usuarios: UsuarioOpcion[] }) {
+export function Formulario({ isUpdate, initialData, usuarios, productos }: { isUpdate: boolean; initialData?: TareaFormValues; usuarios: UsuarioOpcion[]; productos: ProductoOpcion[] }) {
   const router = useRouter();
   const form = useForm<TareaFormValues, unknown, TareaFormOutput>({
     resolver: zodResolver(TareaSchema),
     defaultValues: initialData,
   });
+  const { fields, append, remove } = useFieldArray({ control: form.control, name: "productosObjetivo" });
 
   async function onSubmit(data: TareaFormOutput) {
     try {
@@ -43,8 +45,8 @@ export function Formulario({ isUpdate, initialData, usuarios }: { isUpdate: bool
       }
       router.push("/tareas");
       router.refresh();
-    } catch {
-      toast.error("Error al guardar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al guardar.");
     }
   }
 
@@ -155,6 +157,43 @@ export function Formulario({ isUpdate, initialData, usuarios }: { isUpdate: bool
             </Field>
           )}
         />
+      </div>
+
+
+      <div className="space-y-4 rounded-lg border p-4">
+        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <div>
+            <h3 className="font-semibold">Objetivo de productos</h3>
+            <p className="text-sm text-muted-foreground">Opcionalmente indica qué productos debe vender el usuario asignado.</p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => append({ productoId: productos[0]?.id ?? "", cantidadObjetivo: 1 })} disabled={productos.length === 0}><Plus className="mr-2 h-4 w-4" />Agregar objetivo</Button>
+        </div>
+
+        {productos.length === 0 && <p className="rounded-md bg-muted p-3 text-sm">No hay productos activos disponibles.</p>}
+
+        <div className="space-y-3">
+          {fields.map((item, index) => (
+            <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(220px,1fr)_140px_auto] md:items-start">
+              <Controller name={`productosObjetivo.${index}.productoId`} control={form.control} render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Producto</FieldLabel>
+                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre}</SelectItem>)}</SelectContent></Select></FieldContent>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )} />
+
+              <Controller name={`productosObjetivo.${index}.cantidadObjetivo`} control={form.control} render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Cantidad objetivo</FieldLabel>
+                  <FieldContent><Input type="number" min="1" step="1" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : 1} /></FieldContent>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )} />
+
+              <Button type="button" variant="outline" className="mt-0 md:mt-7" onClick={() => remove(index)}><Trash2 className="h-4 w-4" /></Button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:justify-end">

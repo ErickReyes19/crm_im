@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { ClipboardList, HandCoins, KeyRound, LayersIcon, UserIcon, Users, UserRoundCheck } from "lucide-react";
+import { ClipboardList, HandCoins, KeyRound, LayersIcon, Package, UserIcon, Users, UserRoundCheck } from "lucide-react";
 
 const modules = [
   { title: "Usuarios", url: "/usuarios", icon: UserIcon, permiso: "ver_usuarios" },
@@ -21,6 +21,7 @@ const modules = [
   { title: "Permisos", url: "/permisos", icon: KeyRound, permiso: "ver_permisos" },
   { title: "Clientes", url: "/clientes", icon: Users, permiso: "ver_clientes" },
   { title: "Asignaciones", url: "/clientes/asignaciones", icon: UserRoundCheck, permiso: "asignar_clientes" },
+  { title: "Productos", url: "/productos", icon: Package, permiso: "ver_productos" },
   { title: "Ventas", url: "/ventas", icon: HandCoins, permiso: "ver_ventas" },
   { title: "Tareas", url: "/tareas", icon: ClipboardList, permiso: "ver_tareas" },
 ];

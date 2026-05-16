@@ -6,7 +6,13 @@ import { revalidatePath } from "next/cache";
 import { Cliente } from "./schema";
 
 export async function getClientes() {
+  const session = await getSession();
+  if (!session?.IdUser) throw new Error("Sesión requerida para consultar clientes");
+
+  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+
   return prisma.cliente.findMany({
+    where: puedeVerTodos ? undefined : { usuarioAsignadoId: session.IdUser },
     include: { usuarioAsignado: { select: { id: true, usuario: true } } },
     orderBy: { createAt: "desc" },
   });
@@ -14,7 +20,18 @@ export async function getClientes() {
 
 export async function getClienteById(id?: string) {
   if (!id) return null;
-  return prisma.cliente.findUnique({ where: { id } });
+
+  const session = await getSession();
+  if (!session?.IdUser) throw new Error("Sesión requerida para consultar clientes");
+
+  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+
+  return prisma.cliente.findFirst({
+    where: {
+      id,
+      ...(puedeVerTodos ? {} : { usuarioAsignadoId: session.IdUser }),
+    },
+  });
 }
 
 export async function createCliente(data: Cliente) {
@@ -39,6 +56,16 @@ export async function createCliente(data: Cliente) {
 export async function updateCliente(data: Cliente) {
   if (!data.id) throw new Error("ID de cliente requerido");
 
+  const session = await getSession();
+  if (!session?.IdUser) throw new Error("Sesión requerida para actualizar clientes");
+
+  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const cliente = await prisma.cliente.findFirst({
+    where: { id: data.id, ...(puedeVerTodos ? {} : { usuarioAsignadoId: session.IdUser }) },
+    select: { id: true },
+  });
+  if (!cliente) throw new Error("No tienes acceso a este cliente");
+
   return prisma.cliente.update({
     where: { id: data.id },
     data: {
@@ -55,6 +82,11 @@ export async function updateCliente(data: Cliente) {
 }
 
 export async function transferirCliente(clienteId: string, usuarioAsignadoId: string) {
+  const session = await getSession();
+  if (!session?.IdUser || !session.Permiso?.includes("asignar_clientes")) {
+    throw new Error("No tienes permiso para asignar clientes");
+  }
+
   return prisma.cliente.update({ where: { id: clienteId }, data: { usuarioAsignadoId } });
 }
 
