@@ -3,9 +3,9 @@ import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { ListCheck } from "lucide-react";
 import { getVentas } from "./actions";
-import { columns } from "./components/columns";
-import { DataTable } from "./components/data-table";
 import VentasListMobile from "./components/ventas-list-mobile";
+import { DataTable } from "./components/data-table";
+import { columns } from "./components/columns";
 
 export default async function VentasPage() {
   const permisos = await getSessionPermisos();
