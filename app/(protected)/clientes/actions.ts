@@ -103,7 +103,7 @@ export async function getClientesAsignadosOpciones() {
 
   return prisma.cliente.findMany({
     select: { id: true, nombre: true, apellido: true },
-    where: { activo: true, usuarioAsignadoId: session.IdUser },
+    where: { usuarioAsignadoId: session.IdUser },
     orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
   });
 }

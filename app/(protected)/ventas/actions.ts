@@ -22,7 +22,7 @@ async function getCurrentUserId() {
 
 async function assertClienteAsignado(clienteId: string, usuarioId: string) {
   const cliente = await prisma.cliente.findFirst({
-    where: { id: clienteId, usuarioAsignadoId: usuarioId, activo: true },
+    where: { id: clienteId, usuarioAsignadoId: usuarioId },
     select: { id: true },
   });
 
