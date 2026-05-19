@@ -10,8 +10,8 @@ import { getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics } from "
 
 type DashboardSearchParams = Promise<{ from?: string; to?: string }>;
 
-const currencyFormatter = new Intl.NumberFormat("es-DO", { style: "currency", currency: "DOP" });
-const numberFormatter = new Intl.NumberFormat("es-DO");
+const currencyFormatter = new Intl.NumberFormat("es-HN", { style: "currency", currency: "HNL" });
+const numberFormatter = new Intl.NumberFormat("es-HN");
 
 function formatCurrency(value: number) {
   return currencyFormatter.format(value);

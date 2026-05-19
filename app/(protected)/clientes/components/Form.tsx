@@ -85,7 +85,7 @@ export function Formulario({
             <Field data-invalid={fieldState.invalid} className="max-w-xs">
               <FieldLabel>Ciudad</FieldLabel>
               <FieldContent>
-                <Input placeholder="Ej. Bogotá" autoComplete="address-level2" {...field} value={field.value ?? ""} />
+                <Input placeholder="Ej. San Pedro Sula" autoComplete="address-level2" {...field} value={field.value ?? ""} />
               </FieldContent>
               <FieldDescription>Ubicación principal.</FieldDescription>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
@@ -115,7 +115,7 @@ export function Formulario({
             <Field data-invalid={fieldState.invalid} className="max-w-xs">
               <FieldLabel>Teléfono</FieldLabel>
               <FieldContent>
-                <Input type="tel" placeholder="+57 300 000 0000" autoComplete="tel" {...field} value={field.value ?? ""} />
+                <Input type="tel" placeholder="+50488998800" autoComplete="tel" {...field} value={field.value ?? ""} />
               </FieldContent>
               <FieldDescription>Número de contacto preferido.</FieldDescription>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}

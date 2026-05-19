@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { BarChart3, ClipboardList, HandCoins, KeyRound, LayersIcon, Package, UserIcon, Users, UserRoundCheck, type LucideIcon } from "lucide-react";
+import { BarChart3, ClipboardList, HandCoins, LayersIcon, Package, UserIcon, Users, UserRoundCheck, type LucideIcon } from "lucide-react";
 
 type SidebarModule = {
   title: string;
