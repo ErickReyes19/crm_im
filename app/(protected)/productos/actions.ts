@@ -22,13 +22,11 @@ export async function getProductoById(id?: string) {
 }
 
 export async function getProductosOpciones() {
-  const productos = await prisma.producto.findMany({
+  return prisma.producto.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true, precio: true },
+    select: { id: true, nombre: true },
     orderBy: { nombre: "asc" },
   });
-
-  return productos.map((producto) => ({ ...producto, precio: Number(producto.precio) }));
 }
 
 export async function createProducto(data: Producto) {
@@ -40,7 +38,6 @@ export async function createProducto(data: Producto) {
     data: {
       nombre: data.nombre,
       descripcion: data.descripcion,
-      precio: data.precio,
       activo: data.activo,
       creadoPorId: session.IdUser,
     },
@@ -62,7 +59,6 @@ export async function updateProducto(data: Producto) {
     data: {
       nombre: data.nombre,
       descripcion: data.descripcion,
-      precio: data.precio,
       activo: data.activo,
     },
   });

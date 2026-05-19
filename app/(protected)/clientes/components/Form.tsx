@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -93,20 +92,6 @@ export function Formulario({
           )}
         />
 
-        <Controller
-          name="correo"
-          control={form.control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid} className="max-w-md">
-              <FieldLabel>Correo</FieldLabel>
-              <FieldContent>
-                <Input type="email" placeholder="cliente@correo.com" autoComplete="email" {...field} value={field.value ?? ""} />
-              </FieldContent>
-              <FieldDescription>Correo único para contacto y ventas.</FieldDescription>
-              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        />
 
         <Controller
           name="numero"
@@ -146,21 +131,6 @@ export function Formulario({
           )}
         />
       </div>
-
-      <Controller
-        name="direccion"
-        control={form.control}
-        render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid} className="max-w-2xl">
-            <FieldLabel>Dirección</FieldLabel>
-            <FieldContent>
-              <Textarea rows={3} placeholder="Calle, número, barrio o referencias" autoComplete="street-address" {...field} value={field.value ?? ""} />
-            </FieldContent>
-            <FieldDescription>Usa varias líneas si necesitas referencias de entrega.</FieldDescription>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )}
-      />
 
       {isUpdate && (
         <Controller

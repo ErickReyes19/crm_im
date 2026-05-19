@@ -64,6 +64,7 @@ model Usuarios {
   productos           Producto[]          @relation("UsuarioProductos")
   tareasAsignadas     Tarea[]             @relation("UsuarioTareasAsignadas")
   tareasCreadas       Tarea[]             @relation("UsuarioTareasCreadas")
+  notas               Nota[]
 
   @@index([rol_id], map: "IX_Usuarios_rol_id")
 }
@@ -114,6 +115,7 @@ model Cliente {
 
   usuarioAsignado  Usuarios        @relation("UsuarioClientes", fields: [usuarioAsignadoId], references: [id])
   ventas           Venta[]
+  notas            Nota[]
 
   @@index([usuarioAsignadoId], map: "IX_Cliente_usuarioAsignadoId")
 }
@@ -122,7 +124,6 @@ model Producto {
   id            String          @id @default(uuid())
   nombre        String
   descripcion   String
-  precio        Decimal         @db.Decimal(10, 2)
   activo        Boolean         @default(true)
   creadoPorId   String          @db.VarChar(36)
   createAt      DateTime        @default(now())
@@ -181,10 +182,32 @@ model Tarea {
 
   asignadoA        Usuarios    @relation("UsuarioTareasAsignadas", fields: [asignadoAId], references: [id])
   asignadoPor      Usuarios    @relation("UsuarioTareasCreadas", fields: [asignadoPorId], references: [id])
-  productosObjetivo TareaProducto[]
+  clienteId         String?
+  notaId            String?
+  cliente           Cliente?   @relation(fields: [clienteId], references: [id])
+  nota              Nota?      @relation(fields: [notaId], references: [id])
 
   @@index([asignadoAId], map: "IX_Tarea_asignadoAId")
   @@index([asignadoPorId], map: "IX_Tarea_asignadoPorId")
+  @@index([clienteId], map: "IX_Tarea_clienteId")
+  @@index([notaId], map: "IX_Tarea_notaId")
+}
+
+model Nota {
+  id         String    @id @default(uuid())
+  clienteId  String
+  usuarioId  String    @db.VarChar(36)
+  contenido  String    @db.LongText
+  evidencia  String?   @db.LongText
+  createAt   DateTime  @default(now())
+  updateAt   DateTime  @updatedAt
+
+  cliente    Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  usuario    Usuarios  @relation(fields: [usuarioId], references: [id])
+  tareas     Tarea[]
+
+  @@index([clienteId], map: "IX_Nota_clienteId")
+  @@index([usuarioId], map: "IX_Nota_usuarioId")
 }
 
 

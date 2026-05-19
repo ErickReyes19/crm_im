@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Rol } from "../../roles/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import { Copy, RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
@@ -57,13 +58,8 @@ export function Formulario({
         await updateUsuario(usuarioData as Usuario);
         toast.success("El usuario ha sido actualizado.");
       } else {
-        const response = await createUsuario(usuarioData as Usuario);
-
-        if (response.emailSent) {
-          toast.success("El usuario ha sido creado y el correo fue enviado correctamente.");
-        } else {
-          toast.error("El usuario fue creado, pero no se pudo enviar el correo.");
-        }
+        await createUsuario(usuarioData as Usuario);
+        toast.success("El usuario ha sido creado.");
       }
 
       router.push("/usuarios");
@@ -118,19 +114,27 @@ export function Formulario({
         )}
       />
 
-      {/* Contraseña temporal */}
+      {/* Contraseña */}
       {!isUpdate && (
         <Controller
           name="password"
           control={form.control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel>Contraseña temporal</FieldLabel>
-              <FieldContent>
-                <Input placeholder="Contraseña temporal" type="text" {...field} value={field.value ?? ""} />
+              <FieldLabel>Contraseña</FieldLabel>
+              <FieldContent className="flex gap-2">
+                <Input placeholder="Contraseña" type="text" {...field} value={field.value ?? ""} />
+                <Button type="button" variant="outline" onClick={() => {
+                  const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
+                  form.setValue("password", randomPassword);
+                }}><RefreshCcw className="h-4 w-4" /></Button>
+                <Button type="button" variant="outline" onClick={async () => {
+                  await navigator.clipboard.writeText(field.value ?? "");
+                  toast.success("Contraseña copiada.");
+                }}><Copy className="h-4 w-4" /></Button>
               </FieldContent>
               <FieldDescription>
-                Ingresa la contraseña temporal que se enviará al cliente por correo.
+                Usa una contraseña fija para el nuevo usuario.
               </FieldDescription>
               {fieldState.invalid && (
                 <FieldError errors={[fieldState.error]} />

@@ -1,17 +1,10 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { EmailService, MailPayload } from "@/lib/sendEmail";
-import { generateUserCreatedEmailHtml } from "@/lib/templates/createUserEmail";
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
-import { randomBytes, randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 import { Usuario } from "./schema";
-
-type CreateUsuarioResult = {
-  usuario: Usuario;
-  emailSent: boolean;
-};
 
 /**
  * Obtener todos los usuarios con rol y empleado
@@ -40,9 +33,9 @@ export async function getUsuarios(): Promise<Usuario[]> {
 /**
  * Crear un nuevo usuario y enviar correo con contraseña temporal
  */
-export async function createUsuario(data: Usuario): Promise<CreateUsuarioResult> {
-  const tempPassword = data.password?.trim() || randomBytes(9).toString("base64").slice(0, 12);
-  const hashed = await bcrypt.hash(tempPassword, 10);
+export async function createUsuario(data: Usuario): Promise<Usuario> {
+  if (!data.password?.trim()) throw new Error("La contraseña es requerida");
+  const hashed = await bcrypt.hash(data.password.trim(), 10);
 
   const newUser = await prisma.usuarios.create({
     data: {
@@ -52,29 +45,9 @@ export async function createUsuario(data: Usuario): Promise<CreateUsuarioResult>
       email: data.email,
       contrasena: hashed,
       activo: true,
-      DebeCambiarPassword: true,
+      DebeCambiarPassword: false,
     },
   });
-
-  let emailSent = false;
-
-  if (data.email) {
-    const html = generateUserCreatedEmailHtml(`${data.usuario}`, data.usuario, tempPassword);
-
-    const mailPayload: MailPayload = {
-      to: data.email,
-      subject: "Cuenta creada: contraseña temporal",
-      html,
-    };
-
-    try {
-      const emailService = new EmailService();
-      await emailService.sendMail(mailPayload);
-      emailSent = true;
-    } catch (err) {
-      console.error("Error enviando correo al usuario:", err);
-    }
-  }
 
   revalidatePath("/usuarios");
 
@@ -91,8 +64,7 @@ export async function createUsuario(data: Usuario): Promise<CreateUsuarioResult>
       direccion: newUser.direccion ?? "",
       rol_id: newUser.rol_id,
       activo: newUser.activo,
-    },
-    emailSent,
+    }
   };
 }
 
