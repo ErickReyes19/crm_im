@@ -11,7 +11,7 @@ export default async function ProductosPage() {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("ver_productos")) return <NoAcceso />;
 
-  const data = (await getProductos()).map((producto) => ({ ...producto, precio: Number(producto.precio) }));
+  const data = await getProductos();
 
   return (
     <div className="container mx-auto py-2">

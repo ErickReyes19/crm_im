@@ -8,7 +8,6 @@ import { Cliente } from "../schema";
 
 export const columns: ColumnDef<Cliente>[] = [
   { accessorKey: "nombre", header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Nombre <ArrowUpDown className="ml-2 h-4 w-4" /></Button>, cell: ({ row }) => `${row.original.nombre} ${row.original.apellido}` },
-  { accessorKey: "correo", header: "Correo" },
   { accessorKey: "ciudad", header: "Ciudad" },
   { accessorKey: "etiqueta", header: "Etiqueta" },
   { accessorKey: "numero", header: "Telefono" },

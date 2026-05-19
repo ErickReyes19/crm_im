@@ -1,4 +1,4 @@
-import { getProductosOpciones } from "@/app/(protected)/productos/actions";
+import { getClientesOpciones } from "@/app/(protected)/clientes/actions";
 import { getUsuariosOpciones } from "@/app/(protected)/usuarios/actions";
 import { getSessionPermisos } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
@@ -16,8 +16,7 @@ export default async function EditTareaPage({ params }: { params: Promise<{ id: 
   const tarea = await getTareaById(id);
   if (!tarea) redirect("/tareas");
 
-  const [usuarios, productos] = await Promise.all([getUsuariosOpciones(), getProductosOpciones()]);
-  const productosObjetivo = tarea.productosObjetivo.map((detalle) => ({ productoId: detalle.productoId, cantidadObjetivo: detalle.cantidadObjetivo }));
+  const [usuarios, clientes] = await Promise.all([getUsuariosOpciones(), getClientesOpciones()]);
 
-  return <div><HeaderComponent Icon={Pencil} screenName="Editar tarea" description="En este apartado podrás editar una tarea" /><Formulario isUpdate initialData={{ id: tarea.id, nombre: tarea.nombre, descripcion: tarea.descripcion, estado: tarea.estado, fechaFinalizacion: tarea.fechaFinalizacion, asignadoAId: tarea.asignadoAId, asignadoPorId: tarea.asignadoPorId, productosObjetivo }} usuarios={usuarios} productos={productos} /></div>;
+  return <div><HeaderComponent Icon={Pencil} screenName="Editar tarea" description="En este apartado podrás editar una tarea" /><Formulario isUpdate initialData={{ id: tarea.id, nombre: tarea.nombre, descripcion: tarea.descripcion, estado: tarea.estado, fechaFinalizacion: tarea.fechaFinalizacion, asignadoAId: tarea.asignadoAId, asignadoPorId: tarea.asignadoPorId, clienteId: tarea.clienteId ?? "", notaId: tarea.notaId ?? "" }} usuarios={usuarios} clientes={clientes} /></div>;
 }

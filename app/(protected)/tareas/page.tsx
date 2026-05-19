@@ -10,6 +10,6 @@ import TareasListMobile from "./components/tareas-list-mobile";
 export default async function TareasPage() {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("ver_tareas")) return <NoAcceso />;
-  const data = (await getTareas()).map((tarea) => ({ ...tarea, productosObjetivo: tarea.productosObjetivo.map((detalle) => ({ ...detalle, producto: detalle.producto ? { ...detalle.producto, precio: Number(detalle.producto.precio) } : detalle.producto })) }));
+  const data = await getTareas();
   return <div className="container mx-auto py-2"><HeaderComponent Icon={ListCheck} description="En este apartado podrá ver todas las tareas" screenName="Tareas" /><div className="hidden md:block"><DataTable columns={columns} data={data} /></div><div className="block md:hidden"><TareasListMobile tareas={data} /></div></div>;
 }
