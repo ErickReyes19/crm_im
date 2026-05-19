@@ -2,6 +2,7 @@
 
 import { getSession } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { Cliente } from "./schema";
 
@@ -43,9 +44,9 @@ export async function createCliente(data: Cliente) {
       nombre: data.nombre,
       apellido: data.apellido,
       ciudad: data.ciudad,
-      correo: data.correo,
+      correo: `${randomUUID()}@no-email.local`,
       numero: data.numero,
-      direccion: data.direccion,
+      direccion: "",
       etiqueta: data.etiqueta,
       usuarioAsignadoId: session.IdUser,
       activo: true,
@@ -75,9 +76,9 @@ export async function updateCliente(data: Cliente) {
       nombre: data.nombre,
       apellido: data.apellido,
       ciudad: data.ciudad,
-      correo: data.correo,
+      correo: `${data.id}@no-email.local`,
       numero: data.numero,
-      direccion: data.direccion,
+      direccion: "",
       etiqueta: data.etiqueta,
       activo: data.activo,
     },

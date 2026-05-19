@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, CheckCircle2, Circle, Loader2, MoreHorizontal, PlayCircle } from "lucide-react";
+import { ArrowUpDown, CheckCircle2, Circle, Loader2, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
@@ -22,14 +22,12 @@ import { toast } from "sonner";
 
 const ESTADO_LABELS = {
   PENDIENTE: "Pendiente",
-  EN_PROGRESO: "En progreso",
   COMPLETADA: "Completada",
 } as const;
 
 const ESTADO_OPTIONS = [
   { value: "PENDIENTE", label: ESTADO_LABELS.PENDIENTE, icon: Circle },
-  { value: "EN_PROGRESO", label: ESTADO_LABELS.EN_PROGRESO, icon: PlayCircle },
-  { value: "COMPLETADA", label: ESTADO_LABELS.COMPLETADA, icon: CheckCircle2 },
+    { value: "COMPLETADA", label: ESTADO_LABELS.COMPLETADA, icon: CheckCircle2 },
 ] as const;
 
 export type TareaEstado = keyof typeof ESTADO_LABELS;
@@ -44,7 +42,7 @@ export type TareaTableRow = {
   asignadoPorId: string;
   asignadoA?: { usuario: string } | null;
   asignadoPor?: { usuario: string } | null;
-  productosObjetivo?: Array<{ cantidadObjetivo: number; producto?: { nombre: string } | null }>;
+  cliente?: { nombre: string; apellido: string } | null;
 };
 
 function TareaActions({ tarea }: { tarea: TareaTableRow }) {
@@ -122,11 +120,7 @@ export const columns: ColumnDef<TareaTableRow>[] = [
     header: "Asignado por",
     cell: ({ row }) => row.original.asignadoPor?.usuario ?? "Sin usuario",
   },
-  {
-    id: "productosObjetivoResumen",
-    header: "Objetivo productos",
-    cell: ({ row }) => row.original.productosObjetivo?.length ? row.original.productosObjetivo.map((detalle) => `${detalle.cantidadObjetivo} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ") : "Sin objetivo",
-  },
+  { id: "cliente", header: "Cliente", cell: ({ row }) => row.original.cliente ? `${row.original.cliente.nombre} ${row.original.cliente.apellido}` : "Sin cliente" },
   {
     accessorKey: "fechaFinalizacion",
     header: "Fecha fin",

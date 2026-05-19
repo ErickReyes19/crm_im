@@ -41,21 +41,12 @@ export function Formulario({ isUpdate, initialData }: { isUpdate: boolean; initi
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 rounded-xl border bg-card p-4 shadow-sm md:p-6">
-      <div className="grid gap-5 md:grid-cols-[minmax(260px,420px)_minmax(160px,220px)_minmax(120px,160px)]">
+      <div className="grid gap-5 md:grid-cols-[minmax(260px,420px)_minmax(120px,160px)]">
         <Controller name="nombre" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel>Nombre</FieldLabel>
             <FieldContent><Input placeholder="Ej. Plan mensual" {...field} value={field.value ?? ""} /></FieldContent>
             <FieldDescription>Nombre comercial del producto.</FieldDescription>
-            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-          </Field>
-        )} />
-
-        <Controller name="precio" control={form.control} render={({ field, fieldState }) => (
-          <Field data-invalid={fieldState.invalid}>
-            <FieldLabel>Precio</FieldLabel>
-            <FieldContent><Input type="number" min="0" step="0.01" inputMode="decimal" placeholder="0.00" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : ""} /></FieldContent>
-            <FieldDescription>Precio unitario de venta.</FieldDescription>
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )} />

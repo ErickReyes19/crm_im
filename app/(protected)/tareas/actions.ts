@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Tarea } from "./schema";
 
-const ESTADOS_TAREA = ["PENDIENTE", "EN_PROGRESO", "COMPLETADA"] as const;
+const ESTADOS_TAREA = ["PENDIENTE", "COMPLETADA"] as const;
 type EstadoTarea = (typeof ESTADOS_TAREA)[number];
 
 function isEstadoTarea(value: string): value is EstadoTarea {
@@ -19,11 +19,7 @@ export async function getTareas() {
 
   return prisma.tarea.findMany({
     where: puedeVerTodas ? undefined : { asignadoAId: session.IdUser },
-    include: {
-      asignadoA: { select: { usuario: true } },
-      asignadoPor: { select: { usuario: true } },
-      productosObjetivo: { include: { producto: { select: { id: true, nombre: true, precio: true } } } },
-    },
+    include: { asignadoA: { select: { usuario: true } }, asignadoPor: { select: { usuario: true } }, cliente: { select: { nombre: true, apellido: true } }, nota: { select: { id: true } } },
     orderBy: { createAt: "desc" },
   });
 }
@@ -36,12 +32,8 @@ export async function getTareaById(id: string) {
 
   return prisma.tarea.findFirst({
     where: { id, ...(puedeVerTodas ? {} : { asignadoAId: session.IdUser }) },
-    include: { productosObjetivo: { include: { producto: { select: { id: true, nombre: true, precio: true } } } } },
+    include: { cliente: { select: { nombre: true, apellido: true } }, nota: { select: { id: true } } },
   });
-}
-
-function tareaProductosData(productosObjetivo: Tarea["productosObjetivo"]) {
-  return productosObjetivo.map((item) => ({ productoId: item.productoId, cantidadObjetivo: item.cantidadObjetivo }));
 }
 
 export async function createTarea(data: Tarea) {
@@ -57,7 +49,8 @@ export async function createTarea(data: Tarea) {
       fechaFinalizacion: data.fechaFinalizacion,
       asignadoAId: data.asignadoAId,
       asignadoPorId: session.IdUser,
-      productosObjetivo: { create: tareaProductosData(data.productosObjetivo) },
+      clienteId: data.clienteId || null,
+      notaId: data.notaId || null,
     },
   });
 
@@ -80,7 +73,6 @@ export async function updateTarea(data: Tarea) {
   if (!tareaAccesible) throw new Error("No tienes acceso a esta tarea");
 
   const tarea = await prisma.$transaction(async (tx) => {
-    await tx.tareaProducto.deleteMany({ where: { tareaId: data.id } });
     return tx.tarea.update({
       where: { id: data.id },
       data: {
@@ -89,8 +81,9 @@ export async function updateTarea(data: Tarea) {
         estado: data.estado,
         fechaFinalizacion: data.fechaFinalizacion,
         asignadoAId: data.asignadoAId,
-        asignadoPorId: data.asignadoPorId,
-        productosObjetivo: { create: tareaProductosData(data.productosObjetivo) },
+        asignadoPorId: data.asignadoPorId || session.IdUser,
+        clienteId: data.clienteId || null,
+        notaId: data.notaId || null,
       },
     });
   });
