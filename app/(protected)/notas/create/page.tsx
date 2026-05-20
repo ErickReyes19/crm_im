@@ -5,14 +5,15 @@ import NoAcceso from "@/components/noAccess";
 import { PlusCircle } from "lucide-react";
 import { Formulario } from "../components/Form";
 
-export default async function CreateNotaPage() {
+export default async function CreateNotaPage({ searchParams }: { searchParams: Promise<{ clienteId?: string }> }) {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("crear_notas")) return <NoAcceso />;
 
   const clientes = await getClientesAsignadosOpciones();
+  const { clienteId } = await searchParams;
 
   return <div className="container mx-auto py-2 space-y-4">
     <HeaderComponent Icon={PlusCircle} description="Agrega una nota al cliente con evidencia base64" screenName="Crear nota" />
-    <Formulario clientes={clientes} />
+    <Formulario clientes={clientes} initialData={{ clienteId }} />
   </div>;
 }
