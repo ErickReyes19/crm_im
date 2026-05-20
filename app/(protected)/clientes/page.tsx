@@ -24,7 +24,7 @@ export default async function ClientesPage() {
           </Button>
         </div>
       )}
-      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} /></div>
+      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={permisos.includes("ver_todos_clientes")} /></div>
       <div className="block md:hidden"><ClientesListMobile clientes={data} canEdit={permisos.includes("editar_cliente")} /></div>
     </div>
   );
