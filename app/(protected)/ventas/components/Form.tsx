@@ -15,13 +15,13 @@ import { VentaFormValues, VentaSchema } from "../schema";
 
 type VentaFormOutput = z.output<typeof VentaSchema>;
 type ClienteOpcion = { id: string; nombre: string; apellido: string };
-type ProductoOpcion = { id: string; nombre: string; precio: number };
+type ProductoOpcion = { id: string; nombre: string };
 
-function calcularTotal(items: Array<{ productoId?: string; cantidad?: number | string }> | undefined, productos: ProductoOpcion[]) {
+function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario?: number | string }> | undefined) {
   return (items ?? []).reduce((total, item) => {
-    const producto = productos.find((opcion) => opcion.id === item.productoId);
     const cantidad = Number(item.cantidad ?? 0);
-    return total + (producto?.precio ?? 0) * (Number.isFinite(cantidad) ? cantidad : 0);
+    const precioUnitario = Number(item.precioUnitario ?? 0);
+    return total + (Number.isFinite(precioUnitario) ? precioUnitario : 0) * (Number.isFinite(cantidad) ? cantidad : 0);
   }, 0);
 }
 
@@ -30,11 +30,11 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const form = useForm<VentaFormValues, unknown, VentaFormOutput>({ resolver: zodResolver(VentaSchema), defaultValues: initialData });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
-  const total = calcularTotal(productosSeleccionados as Array<{ productoId?: string; cantidad?: string | number }> | undefined, productos);
+  const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number }> | undefined);
 
   async function onSubmit(data: VentaFormOutput) {
     try {
-      const payload = { ...data, total };
+      const payload = { ...data };
       if (isUpdate) {
         await updateVenta(payload);
         toast.success("Venta actualizada.");
@@ -77,8 +77,8 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
         <Field className="max-w-[240px]">
           <FieldLabel>Total de la venta</FieldLabel>
-          <FieldContent><Input readOnly value={total.toLocaleString("es-DO", { style: "currency", currency: "HNL" })} /></FieldContent>
-          <FieldDescription>Se calcula según productos y cantidades.</FieldDescription>
+          <FieldContent><Input type="number" min="0" step="0.01" {...form.register("total", { valueAsNumber: true })} /></FieldContent>
+          <FieldDescription>Puede editarlo para aplicar descuentos adicionales. Calculado: {totalCalculado.toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</FieldDescription>
         </Field>
       </div>
 
@@ -88,22 +88,22 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
             <h3 className="font-semibold">Productos vendidos</h3>
             <p className="text-sm text-muted-foreground">Selecciona qué productos se vendieron y la cantidad.</p>
           </div>
-          <Button type="button" variant="outline" onClick={() => append({ productoId: productos[0]?.id ?? "", cantidad: 1 })} disabled={productos.length === 0}><Plus className="mr-2 h-4 w-4" />Agregar producto</Button>
+          <Button type="button" variant="outline" onClick={() => append({ productoId: productos[0]?.id ?? "", cantidad: 1, precioUnitario: 0, tipoPrecio: "NORMAL" })} disabled={productos.length === 0}><Plus className="mr-2 h-4 w-4" />Agregar producto</Button>
         </div>
 
         {productos.length === 0 && <p className="rounded-md bg-muted p-3 text-sm">No hay productos activos disponibles.</p>}
 
         <div className="space-y-3">
           {fields.map((item, index) => {
-            const seleccionado = productos.find((producto) => producto.id === productosSeleccionados?.[index]?.productoId);
             const cantidad = Number(productosSeleccionados?.[index]?.cantidad ?? 0);
-            const subtotal = (seleccionado?.precio ?? 0) * (Number.isFinite(cantidad) ? cantidad : 0);
+            const precioUnitario = Number(productosSeleccionados?.[index]?.precioUnitario ?? 0);
+            const subtotal = (Number.isFinite(precioUnitario) ? precioUnitario : 0) * (Number.isFinite(cantidad) ? cantidad : 0);
 
-            return <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(220px,1fr)_120px_160px_auto] md:items-start">
+            return <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(220px,1fr)_120px_140px_170px_160px_auto] md:items-start">
               <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Producto</FieldLabel>
-                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre} - {producto.precio.toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</SelectItem>)}</SelectContent></Select></FieldContent>
+                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre}</SelectItem>)}</SelectContent></Select></FieldContent>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )} />
@@ -112,6 +112,22 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Cantidad</FieldLabel>
                   <FieldContent><Input type="number" min="1" step="1" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : 1} /></FieldContent>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )} />
+
+              <Controller name={`productos.${index}.precioUnitario`} control={form.control} render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Precio unitario</FieldLabel>
+                  <FieldContent><Input type="number" min="0" step="0.01" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : 0} /></FieldContent>
+                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                </Field>
+              )} />
+
+              <Controller name={`productos.${index}.tipoPrecio`} control={form.control} render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Tipo de precio</FieldLabel>
+                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NORMAL">Normal</SelectItem><SelectItem value="DESCUENTO_10">Descuento 10%</SelectItem><SelectItem value="DESCUENTO_20">Descuento 20%</SelectItem></SelectContent></Select></FieldContent>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )} />
