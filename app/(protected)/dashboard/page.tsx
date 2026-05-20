@@ -4,7 +4,7 @@ import NoAcceso from "@/components/noAccess";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { BarChart3, CalendarDays, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarDays, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
 import { getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics } from "./actions";
 
@@ -87,6 +87,23 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
           </Card>
         ))}
       </section>
+
+
+      <Card className="border-yellow-300 bg-yellow-50/60 dark:bg-yellow-950/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300"><AlertTriangle className="h-5 w-5" />Alertas de tareas para hoy</CardTitle>
+          <CardDescription>Tareas con fecha objetivo del día actual ({metrics.range.to}).</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {metrics.tareasHoy.length === 0 ? <EmptyState text="No tienes tareas pendientes para hoy." /> : metrics.tareasHoy.map((tarea) => (
+            <div key={tarea.id} className="rounded-2xl border border-yellow-300 p-3 text-sm">
+              <p className="font-semibold">{tarea.titulo}</p>
+              <p className="text-muted-foreground">Cliente: {tarea.cliente}</p>
+              <p className="text-yellow-700 dark:text-yellow-300">Estado: {tarea.estado}</p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <section className="grid gap-4 xl:grid-cols-2">
         <Card>
