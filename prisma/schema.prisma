@@ -63,6 +63,7 @@ model Usuarios {
   ventas              Venta[]             @relation("UsuarioVentas")
   productos           Producto[]          @relation("UsuarioProductos")
   notas               Nota[]
+  tareas              Tarea[]
 
   @@index([rol_id], map: "IX_Usuarios_rol_id")
 }
@@ -186,12 +187,33 @@ model Nota {
   cliente    Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   usuario    Usuarios  @relation(fields: [usuarioId], references: [id])
   evidencias NotaEvidencia[]
+  tareas     Tarea[]
 
   @@index([clienteId], map: "IX_Nota_clienteId")
   @@index([usuarioId], map: "IX_Nota_usuarioId")
 }
 
 
+
+model Tarea {
+  id          String      @id @default(uuid())
+  notaId       String
+  usuarioId    String      @db.VarChar(36)
+  titulo       String
+  descripcion  String?     @db.LongText
+  fechaObjetivo DateTime
+  estado       EstadoTarea @default(PENDIENTE)
+  createAt     DateTime    @default(now())
+  updateAt     DateTime    @updatedAt
+
+  nota         Nota        @relation(fields: [notaId], references: [id], onDelete: Cascade)
+  usuario      Usuarios    @relation(fields: [usuarioId], references: [id])
+  productosObjetivo TareaProducto[]
+
+  @@index([notaId], map: "IX_Tarea_notaId")
+  @@index([usuarioId], map: "IX_Tarea_usuarioId")
+  @@index([fechaObjetivo], map: "IX_Tarea_fechaObjetivo")
+}
 
 model NotaEvidencia {
   id        String   @id @default(uuid())
@@ -211,6 +233,7 @@ model TareaProducto {
   cantidadObjetivo Int
   createAt         DateTime @default(now())
 
+  tarea            Tarea    @relation(fields: [tareaId], references: [id], onDelete: Cascade)
   producto         Producto @relation(fields: [productoId], references: [id])
 
   @@index([tareaId], map: "IX_TareaProducto_tareaId")
