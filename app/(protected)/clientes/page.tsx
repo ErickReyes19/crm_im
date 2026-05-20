@@ -6,8 +6,7 @@ import { ListCheck, UserRoundCheck } from "lucide-react";
 import Link from "next/link";
 import { getClientes } from "./actions";
 import ClientesListMobile from "./components/clientes-list-mobile";
-import { getColumns } from "./components/columns";
-import { DataTable } from "./components/data-table";
+import ClientesTable from "./components/clientes-table";
 
 export default async function ClientesPage() {
   const permisos = await getSessionPermisos();
@@ -25,7 +24,7 @@ export default async function ClientesPage() {
           </Button>
         </div>
       )}
-      <div className="hidden md:block"><DataTable columns={getColumns(permisos.includes("editar_cliente"))} data={data} /></div>
+      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} /></div>
       <div className="block md:hidden"><ClientesListMobile clientes={data} canEdit={permisos.includes("editar_cliente")} /></div>
     </div>
   );
