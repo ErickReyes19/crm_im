@@ -52,3 +52,11 @@ export async function updateTarea(data: Tarea) {
   await prisma.tarea.update({ where: { id: data.id }, data: { notaId: data.notaId, titulo: data.titulo, descripcion: data.descripcion, fechaObjetivo: data.fechaObjetivo, estado: data.estado } });
   revalidatePath("/tareas");
 }
+
+export async function cambiarEstadoTarea(id: string, estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA") {
+  const session = await getCurrentUser();
+  const tarea = await prisma.tarea.findFirst({ where: { id, usuarioId: session.IdUser }, select: { id: true } });
+  if (!tarea) throw new Error("Tarea no encontrada");
+  await prisma.tarea.update({ where: { id }, data: { estado } });
+  revalidatePath("/tareas");
+}
