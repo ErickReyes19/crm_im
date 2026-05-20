@@ -14,5 +14,5 @@ export default async function EditTareaPage({ params }: { params: Promise<{ id: 
   if (!tarea) redirect("/tareas");
   const notas = await getNotasOpciones();
 
-  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={Pencil} description="Edita una tarea de seguimiento" screenName="Editar tarea" /><Formulario isUpdate notas={notas} initialData={tarea} /></div>;
+  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={Pencil} description="Edita una tarea de seguimiento" screenName="Editar tarea" /><Formulario isUpdate notas={notas} initialData={{...tarea, descripcion: tarea.descripcion ?? undefined}} /></div>;
 }
