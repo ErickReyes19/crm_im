@@ -14,7 +14,7 @@ export async function getVentas() {
     include: {
       cliente: true,
       usuario: { select: { usuario: true } },
-      productos: { include: { producto: { select: { id: true, nombre: true, precio: true } } } },
+      productos: { include: { producto: { select: { id: true, nombre: true } } } },
     },
     orderBy: { createAt: "desc" },
   });
@@ -26,7 +26,7 @@ export async function getVentaById(id: string) {
 
   return prisma.venta.findFirst({
     where: { id, ...(puedeVerTodas ? {} : { usuarioId: session.IdUser }) },
-    include: { productos: { include: { producto: { select: { id: true, nombre: true, precio: true } } } } },
+    include: { productos: { include: { producto: { select: { id: true, nombre: true } } } } },
   });
 }
 
@@ -60,21 +60,21 @@ async function buildVentaProductos(productos: Venta["productos"]) {
   const productoIds = [...new Set(productos.map((item) => item.productoId))];
   const productosDb = await prisma.producto.findMany({
     where: { id: { in: productoIds }, activo: true },
-    select: { id: true, precio: true },
+    select: { id: true },
   });
-
-  const precios = new Map(productosDb.map((producto) => [producto.id, producto.precio]));
+  const productosActivos = new Set(productosDb.map((producto) => producto.id));
 
   const detalles = productos.map((item) => {
-    const precioUnitario = precios.get(item.productoId);
-    if (!precioUnitario) throw new Error("Uno de los productos seleccionados no está disponible");
+    if (!productosActivos.has(item.productoId)) throw new Error("Uno de los productos seleccionados no está disponible");
 
-    const subtotal = new Prisma.Decimal(precioUnitario).mul(item.cantidad);
+    const precioUnitario = new Prisma.Decimal(item.precioUnitario);
+    const subtotal = precioUnitario.mul(item.cantidad);
     return {
       productoId: item.productoId,
       cantidad: item.cantidad,
       precioUnitario,
       subtotal,
+      tipoPrecio: item.tipoPrecio,
     };
   });
 
@@ -86,12 +86,13 @@ export async function createVenta(data: Venta) {
   const session = await getCurrentUser();
   await assertClienteAsignado(data.clienteId, session.IdUser);
   const { detalles, total } = await buildVentaProductos(data.productos);
+  const totalFinal = data.total !== undefined ? new Prisma.Decimal(data.total) : total;
 
   const venta = await prisma.venta.create({
     data: {
       clienteId: data.clienteId,
       usuarioId: session.IdUser,
-      total,
+      total: totalFinal,
       estado: data.estado,
       productos: { create: detalles },
     },
@@ -109,6 +110,7 @@ export async function updateVenta(data: Venta) {
   await assertVentaAccesible(data.id, session.IdUser, session.Permiso);
   await assertClienteAsignado(data.clienteId, session.IdUser);
   const { detalles, total } = await buildVentaProductos(data.productos);
+  const totalFinal = data.total !== undefined ? new Prisma.Decimal(data.total) : total;
 
   const venta = await prisma.$transaction(async (tx) => {
     await tx.ventaProducto.deleteMany({ where: { ventaId: data.id } });
@@ -117,7 +119,7 @@ export async function updateVenta(data: Venta) {
       data: {
         clienteId: data.clienteId,
         usuarioId: session.IdUser,
-        total,
+        total: totalFinal,
         estado: data.estado,
         productos: { create: detalles },
       },

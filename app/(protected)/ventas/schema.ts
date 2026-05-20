@@ -3,6 +3,8 @@ import { z } from "zod";
 export const VentaProductoSchema = z.object({
   productoId: z.string().min(1, "Selecciona un producto"),
   cantidad: z.coerce.number().int("La cantidad debe ser entera").min(1, "La cantidad debe ser mayor a 0"),
+  precioUnitario: z.coerce.number().min(0, "El precio no puede ser negativo"),
+  tipoPrecio: z.enum(["NORMAL", "DESCUENTO_10", "DESCUENTO_20"]).default("NORMAL"),
 });
 
 export const VentaSchema = z.object({

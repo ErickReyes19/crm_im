@@ -99,6 +99,12 @@ enum EstadoTarea {
   COMPLETADA
 }
 
+enum TipoPrecioVenta {
+  NORMAL
+  DESCUENTO_10
+  DESCUENTO_20
+}
+
 model Cliente {
   id               String          @id @default(uuid())
   nombre           String
@@ -160,6 +166,7 @@ model VentaProducto {
   cantidad       Int
   precioUnitario Decimal  @db.Decimal(10, 2)
   subtotal       Decimal  @db.Decimal(10, 2)
+  tipoPrecio     TipoPrecioVenta @default(NORMAL)
   createAt       DateTime @default(now())
 
   venta          Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
