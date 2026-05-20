@@ -8,7 +8,7 @@ import { getNotas } from "./actions";
 
 export default async function NotasPage() {
   const permisos = await getSessionPermisos();
-  if (!permisos?.includes("ver_clientes")) return <NoAcceso />;
+  if (!permisos?.includes("ver_notas")) return <NoAcceso />;
 
   const notas = await getNotas();
 

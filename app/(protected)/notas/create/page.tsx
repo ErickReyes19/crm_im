@@ -7,7 +7,7 @@ import { Formulario } from "../components/Form";
 
 export default async function CreateNotaPage() {
   const permisos = await getSessionPermisos();
-  if (!permisos?.includes("ver_clientes")) return <NoAcceso />;
+  if (!permisos?.includes("crear_notas")) return <NoAcceso />;
 
   const clientes = await getClientesAsignadosOpciones();
 
