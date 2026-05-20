@@ -23,7 +23,8 @@ export type DashboardMetrics = {
   productosMasVendidos: Array<{ id: string; nombre: string; cantidad: number; total: number }>;
   productosMenosVendidos: Array<{ id: string; nombre: string; cantidad: number; total: number }>;
   topClientesConMasVentas: Array<{ id: string; nombre: string; cantidadVentas: number; total: number }>;
-  topClientesSinVentas: Array<{ id: string; nombre: string; ultimaVenta: string | null }>;
+  topClientesSinVentas: Array<{ id: string; nombre: string; ultimaVenta: string | null }>
+  tareasHoy: Array<{ id: string; titulo: string; estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA"; cliente: string; fechaObjetivo: string }>;
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
@@ -98,7 +99,11 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
   const clienteWhere: Prisma.ClienteWhereInput = puedeVerTodosClientes ? {} : { usuarioAsignadoId: session.IdUser };
   const ventaProductoWhere: Prisma.VentaProductoWhereInput = { venta: ventaWhere };
 
-  const [ventasAggregate, totalClientes, totalVentas, totalProductos, productos, productosVendidosGroup, clientesVendidosGroup, clientesVisibles] = await Promise.all([
+  const inicioHoy = new Date();
+  const hoyDesde = new Date(Date.UTC(inicioHoy.getUTCFullYear(), inicioHoy.getUTCMonth(), inicioHoy.getUTCDate()));
+  const hoyHasta = new Date(hoyDesde.getTime() + DAY_IN_MS);
+
+  const [ventasAggregate, totalClientes, totalVentas, totalProductos, productos, productosVendidosGroup, clientesVendidosGroup, clientesVisibles, tareasHoy] = await Promise.all([
     prisma.venta.aggregate({ where: ventaWhere, _sum: { total: true } }),
     prisma.cliente.count({ where: clienteWhere }),
     prisma.venta.count({ where: ventaWhere }),
@@ -131,6 +136,22 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
         },
       },
       orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
+    }),
+    prisma.tarea.findMany({
+      where: {
+        usuarioId: session.IdUser,
+        fechaObjetivo: { gte: hoyDesde, lt: hoyHasta },
+        estado: { not: "COMPLETADA" },
+      },
+      select: {
+        id: true,
+        titulo: true,
+        estado: true,
+        fechaObjetivo: true,
+        nota: { select: { cliente: { select: { nombre: true, apellido: true } } } },
+      },
+      orderBy: { createAt: "asc" },
+      take: 10,
     }),
   ]);
 
@@ -180,6 +201,13 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       nombre: clientesPorId.get(item.clienteId) ?? "Cliente eliminado",
       cantidadVentas: item._count.id,
       total: decimalToNumber(item._sum.total),
+    })),
+    tareasHoy: tareasHoy.map((t) => ({
+      id: t.id,
+      titulo: t.titulo,
+      estado: t.estado,
+      cliente: `${t.nota.cliente.nombre} ${t.nota.cliente.apellido}`.trim(),
+      fechaObjetivo: t.fechaObjetivo.toISOString().slice(0, 10),
     })),
     topClientesSinVentas: clientesVisibles
       .filter((cliente) => !clientesConVentasEnRango.has(cliente.id))
