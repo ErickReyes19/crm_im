@@ -180,17 +180,29 @@ model Nota {
   clienteId  String
   usuarioId  String    @db.VarChar(36)
   contenido  String    @db.LongText
-  evidencia  String?   @db.LongText
   createAt   DateTime  @default(now())
   updateAt   DateTime  @updatedAt
 
   cliente    Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   usuario    Usuarios  @relation(fields: [usuarioId], references: [id])
+  evidencias NotaEvidencia[]
 
   @@index([clienteId], map: "IX_Nota_clienteId")
   @@index([usuarioId], map: "IX_Nota_usuarioId")
 }
 
+
+
+model NotaEvidencia {
+  id        String   @id @default(uuid())
+  notaId    String
+  imagenB64 String   @db.LongText
+  createAt  DateTime @default(now())
+
+  nota Nota @relation(fields: [notaId], references: [id], onDelete: Cascade)
+
+  @@index([notaId], map: "IX_NotaEvidencia_notaId")
+}
 
 model TareaProducto {
   id               String   @id @default(uuid())
