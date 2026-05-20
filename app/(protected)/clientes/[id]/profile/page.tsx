@@ -67,7 +67,7 @@ export default async function ClienteProfilePage({ params }: { params: Promise<{
                 </div>
                 <p className="mb-4 text-xs text-muted-foreground">{nota.createAt.toISOString().slice(0, 10)} · {nota.evidencias.length} evidencias</p>
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/notas/${nota.id}/edit`}>Ver nota</Link>
+                  <Link href={`/notas/${nota.id}`}>Ver nota</Link>
                 </Button>
               </article>
             ))}
