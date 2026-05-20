@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createVenta, updateVenta } from "../actions";
@@ -31,6 +32,11 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
   const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number }> | undefined);
+  const [totalManual, setTotalManual] = useState(Boolean(initialData?.total !== undefined));
+
+  useEffect(() => {
+    if (!totalManual) form.setValue("total", Number(totalCalculado.toFixed(2)), { shouldValidate: true });
+  }, [totalCalculado, totalManual, form]);
 
   async function onSubmit(data: VentaFormOutput) {
     try {
@@ -75,10 +81,10 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
           </Field>
         )} />
 
-        <Field className="max-w-[240px]">
-          <FieldLabel>Total de la venta</FieldLabel>
-          <FieldContent><Input type="number" min="0" step="0.01" {...form.register("total", { valueAsNumber: true })} /></FieldContent>
-          <FieldDescription>Puede editarlo para aplicar descuentos adicionales. Calculado: {totalCalculado.toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</FieldDescription>
+        <Field className="max-w-[260px]">
+          <FieldLabel>Total</FieldLabel>
+          <FieldContent><Input type="number" min="0" step="0.01" {...form.register("total", { valueAsNumber: true, onChange: () => setTotalManual(true) })} /></FieldContent>
+          <FieldDescription>Se autocompleta según productos, pero puedes ajustarlo manualmente.</FieldDescription>
         </Field>
       </div>
 
