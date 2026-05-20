@@ -25,7 +25,14 @@ export async function getNotas() {
 export async function getNotaById(id: string) {
   const session = await getCurrentUser();
   const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
-  return prisma.nota.findFirst({ where: { id, ...(puedeVerTodos ? {} : { cliente: { usuarioAsignadoId: session.IdUser } }) }, include: { evidencias: true } });
+  return prisma.nota.findFirst({
+    where: { id, ...(puedeVerTodos ? {} : { cliente: { usuarioAsignadoId: session.IdUser } }) },
+    include: {
+      evidencias: true,
+      cliente: { select: { id: true, nombre: true, apellido: true } },
+      usuario: { select: { id: true, usuario: true } },
+    },
+  });
 }
 
 export async function createNota(data: Nota) {
@@ -40,7 +47,7 @@ export async function createNota(data: Nota) {
 
 export async function updateNota(data: Nota) {
   if (!data.id) throw new Error("ID requerido");
-  const session = await getCurrentUser();
+  await getCurrentUser();
   const nota = await getNotaById(data.id);
   if (!nota) throw new Error("Nota no encontrada o sin acceso");
 
