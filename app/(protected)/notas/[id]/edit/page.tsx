@@ -9,7 +9,7 @@ import { getNotaById } from "../../actions";
 
 export default async function EditNotaPage({ params }: { params: Promise<{ id: string }> }) {
   const permisos = await getSessionPermisos();
-  if (!permisos?.includes("editar_nota")) return <NoAcceso />;
+  if (!permisos?.includes("editar_notas")) return <NoAcceso />;
   const { id } = await params;
   const nota = await getNotaById(id);
   if (!nota) redirect("/notas");
