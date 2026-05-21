@@ -164,7 +164,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     }),
     prisma.tarea.findMany({
       where: {
-        usuarioId: session.IdUser,
+        usuarioId: usuarioSeleccionadoId,
         fechaObjetivo: { gte: hoyDesde, lt: hoyHasta },
         estado: { not: "COMPLETADA" },
       },
