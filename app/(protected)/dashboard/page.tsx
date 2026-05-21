@@ -6,9 +6,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, BarChart3, CalendarDays, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
-import { getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics } from "./actions";
+import { getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics, getDashboardUsuarios } from "./actions";
 
-type DashboardSearchParams = Promise<{ from?: string; to?: string }>;
+type DashboardSearchParams = Promise<{ from?: string; to?: string; usuarioId?: string }>;
 
 const currencyFormatter = new Intl.NumberFormat("es-HN", { style: "currency", currency: "HNL" });
 const numberFormatter = new Intl.NumberFormat("es-HN");
@@ -21,8 +21,9 @@ function formatNumber(value: number) {
   return numberFormatter.format(value);
 }
 
-function rangeHref(range: { from: string; to: string }) {
-  return `/dashboard?from=${range.from}&to=${range.to}`;
+function rangeHref(range: { from: string; to: string }, usuarioId?: string) {
+  const usuarioQuery = usuarioId ? `&usuarioId=${usuarioId}` : "";
+  return `/dashboard?from=${range.from}&to=${range.to}${usuarioQuery}`;
 }
 
 function EmptyState({ text }: { text: string }) {
@@ -34,10 +35,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
   if (!permisos?.includes("ver_dashboard") && !permisos?.includes("ver_ventas")) return <NoAcceso />;
 
   const params = await searchParams;
-  const [metrics, currentMonth, currentWeek] = await Promise.all([
-    getDashboardMetrics({ from: params.from, to: params.to }),
+  const puedeVerKpisUsuarios = permisos?.includes("acceso_kpi_usuarios");
+
+  const [metrics, currentMonth, currentWeek, usuarios] = await Promise.all([
+    getDashboardMetrics({ from: params.from, to: params.to, usuarioId: params.usuarioId }),
     Promise.resolve(getCurrentMonthRange()),
     Promise.resolve(getCurrentWeekRange()),
+    puedeVerKpisUsuarios ? getDashboardUsuarios() : Promise.resolve([]),
   ]);
 
   const kpis = [
@@ -57,7 +61,24 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
           <CardDescription>Rango aplicado: {metrics.range.label}. Alcance: {metrics.scopeLabel.toLowerCase()}.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto_auto] md:items-end">
+          <form className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto_auto_auto] md:items-end">
+            {puedeVerKpisUsuarios && (
+              <label className="space-y-2 text-sm font-medium">
+                Usuario
+                <select
+                  name="usuarioId"
+                  defaultValue={params.usuarioId ?? ""}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
+                >
+                  <option value="">Mi dashboard</option>
+                  {usuarios.map((usuario) => (
+                    <option key={usuario.id} value={usuario.id}>
+                      {usuario.nombre?.trim() || usuario.usuario}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="space-y-2 text-sm font-medium">
               Desde
               <Input name="from" type="date" defaultValue={metrics.range.from} />
@@ -67,8 +88,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
               <Input name="to" type="date" defaultValue={metrics.range.to} />
             </label>
             <Button type="submit">Aplicar rango</Button>
-            <Button asChild variant="outline"><Link href={rangeHref(currentWeek)}>Esta semana</Link></Button>
-            <Button asChild variant="outline"><Link href={rangeHref(currentMonth)}>Mes actual</Link></Button>
+            <Button asChild variant="outline"><Link href={rangeHref(currentWeek, params.usuarioId)}>Esta semana</Link></Button>
+            <Button asChild variant="outline"><Link href={rangeHref(currentMonth, params.usuarioId)}>Mes actual</Link></Button>
           </form>
         </CardContent>
       </Card>
