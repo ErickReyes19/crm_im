@@ -24,7 +24,7 @@ export default function RootLayout({
       lang="es"
       suppressHydrationWarning
     >
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased p-2">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
