@@ -2,9 +2,12 @@ import { getSession } from "@/auth";
 import { Prisma } from "@/lib/generated/prisma";
 import { prisma } from "@/lib/prisma";
 
+export type DashboardUsuarioOption = { id: string; usuario: string; nombre: string | null };
+
 export type DashboardDateRange = {
   from?: string;
   to?: string;
+  usuarioId?: string;
 };
 
 export type DashboardMetrics = {
@@ -84,19 +87,41 @@ export function getCurrentWeekRange() {
   return { from: toInputDate(from), to: toInputDate(utcToday) };
 }
 
+export async function getDashboardUsuarios(): Promise<DashboardUsuarioOption[]> {
+  const session = await getSession();
+  if (!session?.IdUser) return [];
+
+  const puedeVerKpisUsuarios = session.Permiso?.includes("acceso_kpi_usuarios") ?? false;
+  if (!puedeVerKpisUsuarios) return [];
+
+  return prisma.usuarios.findMany({
+    where: { activo: true },
+    select: { id: true, usuario: true, nombre: true },
+    orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
+  });
+}
+
 export async function getDashboardMetrics(range: DashboardDateRange): Promise<DashboardMetrics> {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para consultar el dashboard");
 
   const puedeVerTodasVentas = session.Permiso?.includes("ver_todas_ventas") ?? false;
   const puedeVerTodosClientes = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const puedeVerKpisUsuarios = session.Permiso?.includes("acceso_kpi_usuarios") ?? false;
   const dateRange = buildRange(range);
+
+  const usuarioSeleccionadoId = puedeVerKpisUsuarios && range.usuarioId ? range.usuarioId : session.IdUser;
 
   const ventaWhere: Prisma.VentaWhereInput = {
     createAt: { gte: dateRange.from, lt: dateRange.toExclusive },
-    ...(puedeVerTodasVentas ? {} : { usuarioId: session.IdUser }),
+    ...(puedeVerTodasVentas || puedeVerKpisUsuarios ? { usuarioId: usuarioSeleccionadoId } : { usuarioId: session.IdUser }),
   };
-  const clienteWhere: Prisma.ClienteWhereInput = puedeVerTodosClientes ? {} : { usuarioAsignadoId: session.IdUser };
+  const clienteWhere: Prisma.ClienteWhereInput =
+    puedeVerKpisUsuarios
+      ? { usuarioAsignadoId: usuarioSeleccionadoId }
+      : puedeVerTodosClientes
+        ? {}
+        : { usuarioAsignadoId: session.IdUser };
   const ventaProductoWhere: Prisma.VentaProductoWhereInput = { venta: ventaWhere };
 
   const inicioHoy = new Date();
@@ -129,7 +154,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
         nombre: true,
         apellido: true,
         ventas: {
-          where: puedeVerTodasVentas ? {} : { usuarioId: session.IdUser },
+          where: puedeVerTodasVentas || puedeVerKpisUsuarios ? { usuarioId: usuarioSeleccionadoId } : { usuarioId: session.IdUser },
           select: { createAt: true },
           orderBy: { createAt: "desc" },
           take: 1,
@@ -139,7 +164,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     }),
     prisma.tarea.findMany({
       where: {
-        usuarioId: session.IdUser,
+        usuarioId: usuarioSeleccionadoId,
         fechaObjetivo: { gte: hoyDesde, lt: hoyHasta },
         estado: { not: "COMPLETADA" },
       },
@@ -187,7 +212,11 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       to: dateRange.toInput,
       label: `${dateRange.fromInput} al ${dateRange.toInput}`,
     },
-    scopeLabel: puedeVerTodasVentas ? "Todas las ventas" : "Mis ventas",
+    scopeLabel: puedeVerKpisUsuarios
+      ? `Ventas de ${usuarioSeleccionadoId === session.IdUser ? "mi usuario" : "usuario seleccionado"}`
+      : puedeVerTodasVentas
+        ? "Todas las ventas"
+        : "Mis ventas",
     kpis: {
       ventasTotales: decimalToNumber(ventasAggregate._sum.total),
       totalClientes,
