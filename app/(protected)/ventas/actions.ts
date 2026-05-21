@@ -5,6 +5,14 @@ import { Prisma } from "@/lib/generated/prisma";
 import { revalidatePath } from "next/cache";
 import { Venta } from "./schema";
 
+
+function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20") {
+  if (tipoPrecio === "DESCUENTO_10") return precioUnitario.mul(new Prisma.Decimal(0.9));
+  if (tipoPrecio === "DESCUENTO_20") return precioUnitario.mul(new Prisma.Decimal(0.8));
+  return precioUnitario;
+}
+
+
 export async function getVentas() {
   const session = await getCurrentUser();
   const puedeVerTodas = session.Permiso?.includes("ver_todas_ventas") ?? false;
@@ -68,7 +76,8 @@ async function buildVentaProductos(productos: Venta["productos"]) {
     if (!productosActivos.has(item.productoId)) throw new Error("Uno de los productos seleccionados no está disponible");
 
     const precioUnitario = new Prisma.Decimal(item.precioUnitario);
-    const subtotal = precioUnitario.mul(item.cantidad);
+    const precioAplicado = aplicarDescuento(precioUnitario, item.tipoPrecio);
+    const subtotal = precioAplicado.mul(item.cantidad);
     return {
       productoId: item.productoId,
       cantidad: item.cantidad,

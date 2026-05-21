@@ -18,11 +18,20 @@ type VentaFormOutput = z.output<typeof VentaSchema>;
 type ClienteOpcion = { id: string; nombre: string; apellido: string };
 type ProductoOpcion = { id: string; nombre: string };
 
-function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario?: number | string }> | undefined) {
+
+function getPrecioConDescuento(precioUnitario: number, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20") {
+  if (tipoPrecio === "DESCUENTO_10") return precioUnitario * 0.9;
+  if (tipoPrecio === "DESCUENTO_20") return precioUnitario * 0.8;
+  return precioUnitario;
+}
+
+function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario?: number | string; tipoPrecio?: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20" }> | undefined) {
   return (items ?? []).reduce((total, item) => {
     const cantidad = Number(item.cantidad ?? 0);
     const precioUnitario = Number(item.precioUnitario ?? 0);
-    return total + (Number.isFinite(precioUnitario) ? precioUnitario : 0) * (Number.isFinite(cantidad) ? cantidad : 0);
+    const tipoPrecio = item.tipoPrecio ?? "NORMAL";
+    const precioAjustado = getPrecioConDescuento(Number.isFinite(precioUnitario) ? precioUnitario : 0, tipoPrecio);
+    return total + precioAjustado * (Number.isFinite(cantidad) ? cantidad : 0);
   }, 0);
 }
 
@@ -31,7 +40,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const form = useForm<VentaFormValues, unknown, VentaFormOutput>({ resolver: zodResolver(VentaSchema), defaultValues: initialData });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
-  const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number }> | undefined);
+  const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20" }> | undefined);
   const [totalManual, setTotalManual] = useState(Boolean(initialData?.total !== undefined));
 
   useEffect(() => {
@@ -103,7 +112,9 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
           {fields.map((item, index) => {
             const cantidad = Number(productosSeleccionados?.[index]?.cantidad ?? 0);
             const precioUnitario = Number(productosSeleccionados?.[index]?.precioUnitario ?? 0);
-            const subtotal = (Number.isFinite(precioUnitario) ? precioUnitario : 0) * (Number.isFinite(cantidad) ? cantidad : 0);
+            const tipoPrecio = productosSeleccionados?.[index]?.tipoPrecio ?? "NORMAL";
+            const precioAjustado = getPrecioConDescuento(Number.isFinite(precioUnitario) ? precioUnitario : 0, tipoPrecio);
+            const subtotal = precioAjustado * (Number.isFinite(cantidad) ? cantidad : 0);
 
             return <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(220px,1fr)_120px_140px_170px_160px_auto] md:items-start">
               <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => (
