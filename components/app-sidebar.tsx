@@ -26,6 +26,7 @@ type SidebarModule = {
 const modules: SidebarModule[] = [
   { title: "Dashboard", url: "/dashboard", icon: BarChart3, permisos: ["ver_dashboard", "ver_ventas"] },
   { title: "Usuarios", url: "/usuarios", icon: UserIcon, permiso: "ver_usuarios" },
+  { title: "Jerarquía", url: "/usuarios/jerarquia", icon: Users, permiso: "super_admin" },
   { title: "Roles", url: "/roles", icon: LayersIcon, permiso: "ver_roles" },
   { title: "Clientes", url: "/clientes", icon: Users, permiso: "ver_clientes" },
   { title: "Asignaciones", url: "/clientes/asignaciones", icon: UserRoundCheck, permiso: "asignar_clientes" },
