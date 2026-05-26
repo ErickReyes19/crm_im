@@ -1,5 +1,3 @@
-// app/layout.tsx
-
 import { getSession } from "@/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
