@@ -1,6 +1,7 @@
 "use server";
 
 import { getSession } from "@/auth";
+import { getScopedUserIds } from "@/lib/access-scope";
 import { prisma } from "@/lib/prisma";
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
@@ -10,10 +11,10 @@ export async function getClientes() {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para consultar clientes");
 
-  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const scopedUserIds = await getScopedUserIds(session);
 
   return prisma.cliente.findMany({
-    where: puedeVerTodos ? undefined : { usuarioAsignadoId: session.IdUser },
+    where: { usuarioAsignadoId: { in: scopedUserIds } },
     include: { usuarioAsignado: { select: { id: true, usuario: true } } },
     orderBy: { createAt: "desc" },
   });
@@ -25,14 +26,9 @@ export async function getClienteById(id?: string) {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para consultar clientes");
 
-  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const scopedUserIds = await getScopedUserIds(session);
 
-  return prisma.cliente.findFirst({
-    where: {
-      id,
-      ...(puedeVerTodos ? {} : { usuarioAsignadoId: session.IdUser }),
-    },
-  });
+  return prisma.cliente.findFirst({ where: { id, usuarioAsignadoId: { in: scopedUserIds } } });
 }
 
 export async function createCliente(data: Cliente) {
@@ -63,9 +59,9 @@ export async function updateCliente(data: Cliente) {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida para actualizar clientes");
 
-  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const scopedUserIds = await getScopedUserIds(session);
   const cliente = await prisma.cliente.findFirst({
-    where: { id: data.id, ...(puedeVerTodos ? {} : { usuarioAsignadoId: session.IdUser }) },
+    where: { id: data.id, usuarioAsignadoId: { in: scopedUserIds } },
     select: { id: true },
   });
   if (!cliente) throw new Error("No tienes acceso a este cliente");
@@ -94,6 +90,10 @@ export async function transferirCliente(clienteId: string, usuarioAsignadoId: st
     throw new Error("No tienes permiso para asignar clientes");
   }
 
+  const scopedUserIds = await getScopedUserIds(session);
+  const targetUser = await prisma.usuarios.findFirst({ where: { id: usuarioAsignadoId, AND: { id: { in: scopedUserIds } } }, select: { id: true } });
+  const cliente = await prisma.cliente.findFirst({ where: { id: clienteId, usuarioAsignadoId: { in: scopedUserIds } }, select: { id: true } });
+  if (!targetUser || !cliente) throw new Error("Fuera de tu alcance");
   return prisma.cliente.update({ where: { id: clienteId }, data: { usuarioAsignadoId } });
 }
 
@@ -105,12 +105,17 @@ export async function asignarClientesAUsuario(usuarioId: string, clienteIds: str
 
   if (!usuarioId) throw new Error("Usuario requerido");
 
+  const scopedUserIds = await getScopedUserIds(session);
+
+  const targetUser = await prisma.usuarios.findFirst({ where: { id: usuarioId, AND: { id: { in: scopedUserIds } } }, select: { id: true } });
+  if (!targetUser) throw new Error("Usuario fuera de tu alcance");
+
   const idsSeleccionados = [...new Set(clienteIds.filter(Boolean))];
 
   await prisma.$transaction(async (tx: { cliente: { updateMany: typeof prisma.cliente.updateMany } }) => {
     if (idsSeleccionados.length > 0) {
       await tx.cliente.updateMany({
-        where: { id: { in: idsSeleccionados } },
+        where: { id: { in: idsSeleccionados }, usuarioAsignadoId: { in: scopedUserIds } },
         data: { usuarioAsignadoId: usuarioId },
       });
     }
@@ -129,9 +134,12 @@ export async function asignarClientesAUsuario(usuarioId: string, clienteIds: str
 }
 
 export async function getClientesOpciones() {
+  const session = await getSession();
+  if (!session?.IdUser) throw new Error("Sesión requerida");
+  const scopedUserIds = await getScopedUserIds(session);
   return prisma.cliente.findMany({
     select: { id: true, nombre: true, apellido: true },
-    where: { activo: true },
+    where: { activo: true, usuarioAsignadoId: { in: scopedUserIds } },
     orderBy: { nombre: "asc" },
   });
 }

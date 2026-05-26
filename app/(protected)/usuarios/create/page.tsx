@@ -2,7 +2,7 @@ import { getSessionPermisos } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { PlusCircle } from "lucide-react";
-import { getRolesPermisosActivos } from "../../roles/actions";
+import { getRolesPermitidosParaFormularioUsuario } from "../../roles/actions";
 import { Formulario } from "../components/Form";
 
 export default async function Create() {
@@ -22,7 +22,7 @@ export default async function Create() {
     activo: true,
     email: ""
   };
-  const roles = await getRolesPermisosActivos();
+  const roles = await getRolesPermitidosParaFormularioUsuario();
 
   return (
     <div className="w-full p-2 m-4">
