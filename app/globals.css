@@ -157,4 +157,7 @@
     @apply font-sans;
     scrollbar-gutter: stable;
   }
+    ::selection {
+    @apply bg-accent text-accent-foreground;
+  }
 }
