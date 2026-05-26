@@ -1,6 +1,6 @@
 // /pages/usuarios/[id]/editar/page.tsx
 
-import { getRolesPermisosActivos } from "@/app/(protected)/roles/actions";
+import { getRolesPermitidosParaFormularioUsuario } from "@/app/(protected)/roles/actions";
 import { getSessionPermisos } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
@@ -21,7 +21,7 @@ export default async function Edit({ params }: { params: Promise<{ id: string }>
 
   const { id } = await params;
   const usuario = await getUsuarioById(id);
-  const roles = await getRolesPermisosActivos();
+  const roles = await getRolesPermitidosParaFormularioUsuario();
 
 
   if (!usuario) {
