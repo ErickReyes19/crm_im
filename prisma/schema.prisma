@@ -64,8 +64,12 @@ model Usuarios {
   productos           Producto[]          @relation("UsuarioProductos")
   notas               Nota[]
   tareas              Tarea[]
+  adminPadreId        String?              @db.VarChar(36)
+  adminPadre          Usuarios?            @relation("AdminVendedores", fields: [adminPadreId], references: [id])
+  vendedores          Usuarios[]           @relation("AdminVendedores")
 
   @@index([rol_id], map: "IX_Usuarios_rol_id")
+  @@index([adminPadreId], map: "IX_Usuarios_adminPadreId")
 }
 
 model PasswordResetToken {
