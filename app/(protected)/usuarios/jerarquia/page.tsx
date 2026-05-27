@@ -3,107 +3,132 @@ import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { prisma } from "@/lib/prisma";
-import { Crown, Network, UserRound, Users } from "lucide-react";
+import { Crown, MousePointerClick, UserRound, Users } from "lucide-react";
+import Link from "next/link";
 
-async function getHierarchyData(adminId?: string) {
+type Search = Promise<{ adminId?: string; vendedorId?: string }>;
+
+async function getData(adminId?: string, vendedorId?: string) {
   const admins = await prisma.usuarios.findMany({
     where: { rol: { nombre: "ADMINISTRADOR" }, activo: true },
     select: { id: true, usuario: true, nombre: true },
     orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
   });
 
-  const selectedAdminId = adminId && admins.some((a) => a.id === adminId) ? adminId : admins[0]?.id;
-  if (!selectedAdminId) return { admins, selectedAdminId: null, vendedores: [], clientes: [] };
+  const selectedAdminId = adminId && admins.some((a) => a.id === adminId) ? adminId : null;
 
-  const vendedores = await prisma.usuarios.findMany({
-    where: { adminPadreId: selectedAdminId, activo: true },
-    select: { id: true, usuario: true, nombre: true },
-    orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
-  });
+  const vendedores = selectedAdminId
+    ? await prisma.usuarios.findMany({
+        where: { adminPadreId: selectedAdminId, activo: true },
+        select: { id: true, usuario: true, nombre: true },
+        orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
+      })
+    : [];
 
-  const miembrosEquipo = [selectedAdminId, ...vendedores.map((v) => v.id)];
-  const clientes = await prisma.cliente.findMany({
-    where: { usuarioAsignadoId: { in: miembrosEquipo }, activo: true },
-    select: { id: true, nombre: true, apellido: true, ciudad: true, usuarioAsignado: { select: { id: true, usuario: true, nombre: true } } },
-    orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
-  });
+  const selectedVendedorId =
+    vendedorId && vendedores.some((v) => v.id === vendedorId) ? vendedorId : null;
 
-  return { admins, selectedAdminId, vendedores, clientes };
+  const clientes = selectedVendedorId
+    ? await prisma.cliente.findMany({
+        where: { usuarioAsignadoId: selectedVendedorId, activo: true },
+        include: { usuarioAsignado: { select: { usuario: true, nombre: true } } },
+        orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
+      })
+    : [];
+
+  return { admins, selectedAdminId, vendedores, selectedVendedorId, clientes };
 }
 
-export default async function JerarquiaUsuariosPage({ searchParams }: { searchParams: Promise<{ adminId?: string }> }) {
+export default async function JerarquiaUsuariosPage({ searchParams }: { searchParams: Search }) {
   const session = await getSession();
   if (!session?.Permiso?.includes("super_admin")) return <NoAcceso />;
 
   const params = await searchParams;
-  const { admins, selectedAdminId, vendedores, clientes } = await getHierarchyData(params?.adminId);
+  const { admins, selectedAdminId, vendedores, selectedVendedorId, clientes } = await getData(params.adminId, params.vendedorId);
 
   return (
     <div className="container mx-auto py-2 space-y-4">
-      <HeaderComponent Icon={Network} screenName="Jerarquía de usuarios" description="Vista de administradores, sus vendedores y clientes asignados" />
+      <HeaderComponent Icon={Users} screenName="Jerarquía de usuarios" description="Selecciona administrador y luego vendedor para consultar sus clientes" />
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5" />Selecciona un administrador</CardTitle>
-          <CardDescription>Solo usuarios con permiso super_admin pueden acceder a esta pantalla.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5" />1) Selecciona Administrador</CardTitle>
+          <CardDescription>Haz click en un administrador para cargar sus vendedores.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form action="/usuarios/jerarquia" className="max-w-md">
-            <Select name="adminId" defaultValue={selectedAdminId ?? undefined}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecciona un administrador" />
-              </SelectTrigger>
-              <SelectContent>
-                {admins.map((admin) => (
-                  <SelectItem key={admin.id} value={admin.id}>{admin.nombre || admin.usuario}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <button type="submit" className="sr-only">filtrar</button>
-          </form>
+        <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {admins.map((admin) => {
+            const active = selectedAdminId === admin.id;
+            return (
+              <Link
+                key={admin.id}
+                href={`/usuarios/jerarquia?adminId=${admin.id}`}
+                className={`rounded-xl border p-3 transition hover:bg-muted/40 ${active ? "border-primary bg-primary/5" : ""}`}
+              >
+                <p className="font-medium">{admin.nombre || admin.usuario}</p>
+                <p className="text-xs text-muted-foreground">@{admin.usuario}</p>
+              </Link>
+            );
+          })}
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card><CardHeader><CardTitle className="text-base">Admins activos</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{admins.length}</p></CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-base">Vendedores del admin</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{vendedores.length}</p></CardContent></Card>
-        <Card><CardHeader><CardTitle className="text-base">Clientes del equipo</CardTitle></CardHeader><CardContent><p className="text-2xl font-semibold">{clientes.length}</p></CardContent></Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><MousePointerClick className="h-5 w-5" />2) Selecciona Vendedor</CardTitle>
+          <CardDescription>
+            {selectedAdminId ? "Haz click en un vendedor para ver sus clientes." : "Primero debes seleccionar un administrador."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {!selectedAdminId ? (
+            <p className="text-sm text-muted-foreground">Sin administrador seleccionado.</p>
+          ) : vendedores.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Este administrador no tiene vendedores.</p>
+          ) : (
+            vendedores.map((v) => {
+              const active = selectedVendedorId === v.id;
+              return (
+                <Link
+                  key={v.id}
+                  href={`/usuarios/jerarquia?adminId=${selectedAdminId}&vendedorId=${v.id}`}
+                  className={`flex items-center justify-between rounded-xl border p-3 transition hover:bg-muted/40 ${active ? "border-primary bg-primary/5" : ""}`}
+                >
+                  <div>
+                    <p className="font-medium">{v.nombre || v.usuario}</p>
+                    <p className="text-xs text-muted-foreground">@{v.usuario}</p>
+                  </div>
+                  <Badge variant="secondary">Vendedor</Badge>
+                </Link>
+              );
+            })
+          )}
+        </CardContent>
+      </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Vendedores</CardTitle>
-            <CardDescription>{vendedores.length === 0 ? "Este administrador no tiene vendedores asignados." : "Listado de vendedores asociados."}</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {vendedores.length === 0 ? <p className="text-sm text-muted-foreground">Sin vendedores</p> : vendedores.map((v) => (
-              <div key={v.id} className="rounded-lg border p-3 flex items-center justify-between">
-                <div><p className="font-medium">{v.nombre || v.usuario}</p><p className="text-xs text-muted-foreground">@{v.usuario}</p></div>
-                <Badge variant="secondary">Vendedor</Badge>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5" />Clientes del equipo</CardTitle>
-            <CardDescription>Clientes del administrador seleccionado y sus vendedores.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 max-h-[520px] overflow-auto">
-            {clientes.length === 0 ? <p className="text-sm text-muted-foreground">No hay clientes asignados</p> : clientes.map((c) => (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5" />3) Clientes del vendedor</CardTitle>
+          <CardDescription>
+            {selectedVendedorId ? `Mostrando ${clientes.length} clientes asignados.` : "Selecciona un vendedor para consultar clientes."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 max-h-[520px] overflow-auto">
+          {!selectedVendedorId ? (
+            <p className="text-sm text-muted-foreground">No hay vendedor seleccionado.</p>
+          ) : clientes.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Este vendedor no tiene clientes asignados.</p>
+          ) : (
+            clientes.map((c) => (
               <div key={c.id} className="rounded-lg border p-3">
                 <p className="font-medium">{c.nombre} {c.apellido}</p>
                 <p className="text-xs text-muted-foreground">{c.ciudad}</p>
                 <Badge className="mt-2" variant="outline">Asignado a: {c.usuarioAsignado.nombre || c.usuarioAsignado.usuario}</Badge>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
