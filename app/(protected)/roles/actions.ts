@@ -1,5 +1,6 @@
 
 "use server";
+import { getSession } from "@/auth";
 import { prisma } from "@/lib/prisma"; // Asegúrate de importar correctamente tu cliente de Prisma
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
@@ -195,4 +196,19 @@ export async function postRol({
     console.error("Error al crear el rol:", error);
     return null;
   }
+}
+
+export async function getRolesPermitidosParaFormularioUsuario(): Promise<RolDTO[]> {
+  const session = await getSession();
+  if (!session?.IdUser) return [];
+
+  const esSuperAdmin = session.Permiso?.includes("super_admin") ?? false;
+
+  const roles = await getRolesPermisosActivos();
+  if (esSuperAdmin) {
+    return roles.filter((r) => r.nombre.toUpperCase() !== "SUPER_ADMIN");
+  }
+
+  const bloqueados = new Set(["SUPER_ADMIN", "ADMINISTRADOR"]);
+  return roles.filter((r) => !bloqueados.has(r.nombre.toUpperCase()));
 }
