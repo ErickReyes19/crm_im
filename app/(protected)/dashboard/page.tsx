@@ -4,7 +4,7 @@ import NoAcceso from "@/components/noAccess";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, BarChart3, CalendarDays, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarDays, FileText, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
 import { getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics, getDashboardUsuarios } from "./actions";
 
@@ -19,6 +19,13 @@ function formatCurrency(value: number) {
 
 function formatNumber(value: number) {
   return numberFormatter.format(value);
+}
+
+function formatDiasSinNota(value: number | null) {
+  if (value === null) return "Sin notas";
+  if (value === 0) return "Hoy";
+  if (value === 1) return "Hace 1 día";
+  return `Hace ${formatNumber(value)} días`;
 }
 
 function rangeHref(range: { from: string; to: string }, usuarioId?: string) {
@@ -49,6 +56,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
     { title: "Total de clientes", value: formatNumber(metrics.kpis.totalClientes), description: "Clientes visibles para tu usuario", icon: Users },
     { title: "Total de ventas", value: formatNumber(metrics.kpis.totalVentas), description: "Ventas dentro del rango", icon: ShoppingCart },
     { title: "Total de productos", value: formatNumber(metrics.kpis.totalProductos), description: "Productos activos", icon: Package },
+    { title: "Clientes sin notas", value: formatNumber(metrics.kpis.clientesSinNotas), description: "Clientes visibles que aún no tienen seguimiento", icon: FileText },
   ];
 
   return (
@@ -94,7 +102,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
         </CardContent>
       </Card>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {kpis.map((kpi) => (
           <Card key={kpi.title}>
             <CardHeader className="flex flex-row items-center justify-between gap-3 space-y-0">
@@ -109,6 +117,25 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
         ))}
       </section>
 
+
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Seguimiento por notas</CardTitle>
+          <CardDescription>Clientes visibles ordenados por mayor tiempo sin nota reciente.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {metrics.clientesUltimaNota.length === 0 ? <EmptyState text="No hay clientes visibles para analizar notas." /> : metrics.clientesUltimaNota.map((cliente) => (
+            <div key={cliente.id} className="flex flex-col gap-1 rounded-3xl border p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium">{cliente.nombre}</p>
+                <p className="text-muted-foreground">Última nota: {cliente.ultimaNota ?? "Sin historial"}</p>
+              </div>
+              <span className="font-semibold text-amber-700 dark:text-amber-300">{formatDiasSinNota(cliente.diasDesdeUltimaNota)}</span>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
 
       <Card className="border-yellow-300 bg-yellow-50/60 dark:bg-yellow-950/20">
         <CardHeader>

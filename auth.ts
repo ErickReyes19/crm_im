@@ -204,6 +204,43 @@ const usuarioWithRolArgs =
   });
 
 // ------------------------------
+// TASK DATE HELPERS
+// ------------------------------
+function getDateKey(date: Date, timeZone?: string) {
+  if (!timeZone) return date.toISOString().slice(0, 10);
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+async function countTareasHoyUsuario(userId: string) {
+  const now = new Date();
+  const todayUtcKey = getDateKey(now);
+  const todayHondurasKey = getDateKey(now, "America/Tegucigalpa");
+  const searchFrom = new Date(now.getTime() - 36 * 60 * 60 * 1000);
+  const searchTo = new Date(now.getTime() + 36 * 60 * 60 * 1000);
+
+  const tareasCercanas = await prisma.tarea.findMany({
+    where: {
+      usuarioId: userId,
+      estado: { not: "COMPLETADA" },
+      fechaObjetivo: { gte: searchFrom, lt: searchTo },
+    },
+    select: { id: true, fechaObjetivo: true },
+  });
+
+  return tareasCercanas.filter((tarea) => {
+    const fechaUtcKey = getDateKey(tarea.fechaObjetivo);
+    const fechaHondurasKey = getDateKey(tarea.fechaObjetivo, "America/Tegucigalpa");
+    return fechaUtcKey === todayUtcKey || fechaHondurasKey === todayHondurasKey;
+  }).length;
+}
+
+// ------------------------------
 // DB AUTH
 // ------------------------------
 async function authenticateDB(username: string, password: string) {
@@ -224,18 +261,7 @@ async function authenticateDB(username: string, password: string) {
     );
 
     const now = new Date();
-    const startOfToday = new Date(now);
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfTomorrow = new Date(startOfToday);
-    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
-
-    const tareasHoy = await prisma.tarea.count({
-      where: {
-        usuarioId: user.id,
-        estado: { not: "COMPLETADA" },
-        fechaObjetivo: { gte: startOfToday, lt: startOfTomorrow },
-      },
-    });
+    const tareasHoy = await countTareasHoyUsuario(user.id);
 
     await prisma.usuarios.update({
       where: { id: user.id },

@@ -140,3 +140,20 @@ export async function updateVenta(data: Venta) {
   revalidatePath("/dashboard");
   return { id: venta.id, total: Number(venta.total) };
 }
+
+export async function cambiarEstadoVenta(id: string, estado: "PROCESO" | "ENVIO" | "ENTREGADA") {
+  const session = await getCurrentUser();
+  if (!session.Permiso?.includes("editar_venta")) throw new Error("No tienes permiso para cambiar el estado de la venta");
+
+  await assertVentaAccesible(id, session.IdUser, session.Permiso);
+
+  const venta = await prisma.venta.update({
+    where: { id },
+    data: { estado },
+    select: { id: true, estado: true },
+  });
+
+  revalidatePath("/ventas");
+  revalidatePath("/dashboard");
+  return venta;
+}
