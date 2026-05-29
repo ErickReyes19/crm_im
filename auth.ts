@@ -118,6 +118,16 @@ export const getSessionPermisos = async () => {
 // ------------------------------
 export const signOut = async () => {
   const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  const session = token ? await decrypt(token) : null;
+
+  if (session?.IdUser) {
+    await prisma.usuarios.update({
+      where: { id: session.IdUser },
+      data: { estaOnline: false, ultimaActividad: new Date() },
+    }).catch((err) => console.error("signOut status error:", err));
+  }
+
   cookieStore.delete("session");
 };
 
@@ -148,7 +158,10 @@ export const login = async (
     success: "Login OK",
     redirect: authResult.debeCambiar
       ? "/reset-password"
-      : redirect,
+      : authResult.tareasHoy > 0
+        ? "/tareas"
+        : redirect,
+    tareasHoy: authResult.debeCambiar ? 0 : authResult.tareasHoy,
   };
 };
 
@@ -191,6 +204,43 @@ const usuarioWithRolArgs =
   });
 
 // ------------------------------
+// TASK DATE HELPERS
+// ------------------------------
+function getDateKey(date: Date, timeZone?: string) {
+  if (!timeZone) return date.toISOString().slice(0, 10);
+
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+async function countTareasHoyUsuario(userId: string) {
+  const now = new Date();
+  const todayUtcKey = getDateKey(now);
+  const todayHondurasKey = getDateKey(now, "America/Tegucigalpa");
+  const searchFrom = new Date(now.getTime() - 36 * 60 * 60 * 1000);
+  const searchTo = new Date(now.getTime() + 36 * 60 * 60 * 1000);
+
+  const tareasCercanas = await prisma.tarea.findMany({
+    where: {
+      usuarioId: userId,
+      estado: { not: "COMPLETADA" },
+      fechaObjetivo: { gte: searchFrom, lt: searchTo },
+    },
+    select: { id: true, fechaObjetivo: true },
+  });
+
+  return tareasCercanas.filter((tarea) => {
+    const fechaUtcKey = getDateKey(tarea.fechaObjetivo);
+    const fechaHondurasKey = getDateKey(tarea.fechaObjetivo, "America/Tegucigalpa");
+    return fechaUtcKey === todayUtcKey || fechaHondurasKey === todayHondurasKey;
+  }).length;
+}
+
+// ------------------------------
 // DB AUTH
 // ------------------------------
 async function authenticateDB(username: string, password: string) {
@@ -210,6 +260,14 @@ async function authenticateDB(username: string, password: string) {
       (rp) => rp.permiso.nombre
     );
 
+    const now = new Date();
+    const tareasHoy = await countTareasHoyUsuario(user.id);
+
+    await prisma.usuarios.update({
+      where: { id: user.id },
+      data: { ultimoInicioSesion: now, ultimaActividad: now, estaOnline: true },
+    });
+
     const payload: UsuarioSesion = {
       IdUser: user.id,
       User: user.usuario,
@@ -226,6 +284,7 @@ async function authenticateDB(username: string, password: string) {
     return {
       token: await encrypt(payload),
       debeCambiar: payload.DebeCambiar,
+      tareasHoy,
     };
   } catch (err) {
     console.error("authenticateDB error:", err);

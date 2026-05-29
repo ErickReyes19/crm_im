@@ -12,20 +12,27 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createVenta, updateVenta } from "../actions";
-import { VentaFormValues, VentaSchema } from "../schema";
+import { TipoPrecioVenta, VentaFormValues, VentaSchema } from "../schema";
 
 type VentaFormOutput = z.output<typeof VentaSchema>;
 type ClienteOpcion = { id: string; nombre: string; apellido: string };
 type ProductoOpcion = { id: string; nombre: string };
 
+const descuentos: Array<{ value: TipoPrecioVenta; label: string }> = [
+  { value: "NORMAL", label: "Normal" },
+  { value: "DESCUENTO_10", label: "Descuento 10%" },
+  { value: "DESCUENTO_20", label: "Descuento 20%" },
+  { value: "DESCUENTO_30", label: "Descuento 30%" },
+];
 
-function getPrecioConDescuento(precioUnitario: number, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20") {
+function getPrecioConDescuento(precioUnitario: number, tipoPrecio: TipoPrecioVenta) {
   if (tipoPrecio === "DESCUENTO_10") return precioUnitario * 0.9;
   if (tipoPrecio === "DESCUENTO_20") return precioUnitario * 0.8;
+  if (tipoPrecio === "DESCUENTO_30") return precioUnitario * 0.7;
   return precioUnitario;
 }
 
-function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario?: number | string; tipoPrecio?: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20" }> | undefined) {
+function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario?: number | string; tipoPrecio?: TipoPrecioVenta }> | undefined) {
   return (items ?? []).reduce((total, item) => {
     const cantidad = Number(item.cantidad ?? 0);
     const precioUnitario = Number(item.precioUnitario ?? 0);
@@ -35,21 +42,32 @@ function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario
   }, 0);
 }
 
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("No se pudo leer la evidencia"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function Formulario({ isUpdate, initialData, clientes, productos }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; productos: ProductoOpcion[] }) {
   const router = useRouter();
   const form = useForm<VentaFormValues, unknown, VentaFormOutput>({ resolver: zodResolver(VentaSchema), defaultValues: initialData });
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
-  const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20" }> | undefined);
-  const [totalManual, setTotalManual] = useState(Boolean(initialData?.total !== undefined));
+  const metodoPago = useWatch({ control: form.control, name: "metodoPago" });
+  const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaB64" });
+  const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
+  const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
 
   useEffect(() => {
-    if (!totalManual) form.setValue("total", Number(totalCalculado.toFixed(2)), { shouldValidate: true });
-  }, [totalCalculado, totalManual, form]);
+    form.setValue("total", Number(totalCalculado.toFixed(2)), { shouldValidate: true });
+  }, [totalCalculado, form]);
 
   async function onSubmit(data: VentaFormOutput) {
     try {
-      const payload = { ...data };
+      const payload = { ...data, total: Number(totalCalculado.toFixed(2)) };
       if (isUpdate) {
         await updateVenta(payload);
         toast.success("Venta actualizada.");
@@ -64,9 +82,32 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
     }
   }
 
+  async function handleEvidenciaChange(file?: File) {
+    if (!file) {
+      form.setValue("evidenciaTransferenciaB64", "", { shouldValidate: true });
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("La evidencia debe ser una imagen.");
+      return;
+    }
+
+    setCargandoEvidencia(true);
+    try {
+      const base64 = await fileToBase64(file);
+      form.setValue("evidenciaTransferenciaB64", base64, { shouldValidate: true, shouldDirty: true });
+      toast.success("Evidencia cargada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo cargar la evidencia.");
+    } finally {
+      setCargandoEvidencia(false);
+    }
+  }
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 rounded-xl border bg-card p-4 shadow-sm md:p-6">
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <Controller name="clienteId" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid} className="max-w-sm">
             <FieldLabel>Cliente asignado</FieldLabel>
@@ -90,18 +131,36 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
           </Field>
         )} />
 
+        <Controller name="metodoPago" control={form.control} render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="max-w-[260px]">
+            <FieldLabel>Método de pago</FieldLabel>
+            <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="EFECTIVO">Efectivo</SelectItem><SelectItem value="TRANSFERENCIA">Transferencia</SelectItem></SelectContent></Select></FieldContent>
+            <FieldDescription>Indica cómo se recibió el pago.</FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )} />
+
         <Field className="max-w-[260px]">
-          <FieldLabel>Total</FieldLabel>
-          <FieldContent><Input type="number" min="0" step="0.01" {...form.register("total", { valueAsNumber: true, onChange: () => setTotalManual(true) })} /></FieldContent>
-          <FieldDescription>Se autocompleta según productos, pero puedes ajustarlo manualmente.</FieldDescription>
+          <FieldLabel>Total de la venta</FieldLabel>
+          <FieldContent><Input readOnly value={totalCalculado.toFixed(2)} /></FieldContent>
+          <FieldDescription>Suma automática de todos los productos y descuentos.</FieldDescription>
         </Field>
       </div>
+
+      {metodoPago === "TRANSFERENCIA" && (
+        <Field data-invalid={Boolean(form.formState.errors.evidenciaTransferenciaB64)} className="rounded-lg border p-4">
+          <FieldLabel>Evidencia de transferencia</FieldLabel>
+          <FieldContent><Input type="file" accept="image/*" onChange={(event) => handleEvidenciaChange(event.target.files?.[0])} disabled={cargandoEvidencia} /></FieldContent>
+          <FieldDescription>{evidenciaTransferencia ? "Evidencia guardada en base64 lista para enviarse." : "Sube una foto o captura de la transferencia."}</FieldDescription>
+          {form.formState.errors.evidenciaTransferenciaB64 && <FieldError errors={[form.formState.errors.evidenciaTransferenciaB64]} />}
+        </Field>
+      )}
 
       <div className="space-y-4 rounded-lg border p-4">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h3 className="font-semibold">Productos vendidos</h3>
-            <p className="text-sm text-muted-foreground">Selecciona qué productos se vendieron y la cantidad.</p>
+            <p className="text-sm text-muted-foreground">Selecciona qué productos se vendieron, la cantidad, precio y descuento.</p>
           </div>
           <Button type="button" variant="outline" onClick={() => append({ productoId: productos[0]?.id ?? "", cantidad: 1, precioUnitario: 0, tipoPrecio: "NORMAL" })} disabled={productos.length === 0}><Plus className="mr-2 h-4 w-4" />Agregar producto</Button>
         </div>
@@ -112,7 +171,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
           {fields.map((item, index) => {
             const cantidad = Number(productosSeleccionados?.[index]?.cantidad ?? 0);
             const precioUnitario = Number(productosSeleccionados?.[index]?.precioUnitario ?? 0);
-            const tipoPrecio = productosSeleccionados?.[index]?.tipoPrecio ?? "NORMAL";
+            const tipoPrecio = (productosSeleccionados?.[index]?.tipoPrecio ?? "NORMAL") as TipoPrecioVenta;
             const precioAjustado = getPrecioConDescuento(Number.isFinite(precioUnitario) ? precioUnitario : 0, tipoPrecio);
             const subtotal = precioAjustado * (Number.isFinite(cantidad) ? cantidad : 0);
 
@@ -144,7 +203,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
               <Controller name={`productos.${index}.tipoPrecio`} control={form.control} render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Tipo de precio</FieldLabel>
-                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NORMAL">Normal</SelectItem><SelectItem value="DESCUENTO_10">Descuento 10%</SelectItem><SelectItem value="DESCUENTO_20">Descuento 20%</SelectItem></SelectContent></Select></FieldContent>
+                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{descuentos.map((descuento) => <SelectItem key={descuento.value} value={descuento.value}>{descuento.label}</SelectItem>)}</SelectContent></Select></FieldContent>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )} />
@@ -162,7 +221,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
       <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={() => router.push("/ventas")}>Cancelar</Button>
-        <Button type="submit" disabled={form.formState.isSubmitting || clientes.length === 0 || productos.length === 0}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
+        <Button type="submit" disabled={form.formState.isSubmitting || cargandoEvidencia || clientes.length === 0 || productos.length === 0}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
       </div>
     </form>
   );

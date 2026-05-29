@@ -20,7 +20,7 @@ export default async function EditVentaPage({ params }: { params: Promise<{ id: 
   const clienteActualDisponible = clientesAsignados.some((cliente: { id: string }) => cliente.id === venta.clienteId);
   if (!clienteActualDisponible) redirect("/ventas");
 
-  const productosVenta = venta.productos.map((detalle) => ({ productoId: detalle.productoId, cantidad: detalle.cantidad }));
+  const productosVenta = venta.productos.map((detalle) => ({ productoId: detalle.productoId, cantidad: detalle.cantidad, precioUnitario: Number(detalle.precioUnitario), tipoPrecio: detalle.tipoPrecio }));
 
-  return <div><HeaderComponent Icon={Pencil} screenName="Editar venta" description="En este apartado podrás editar una venta" /><Formulario isUpdate initialData={{ id: venta.id, clienteId: venta.clienteId, total: Number(venta.total), estado: venta.estado, productos: productosVenta.length > 0 ? productosVenta : [{ productoId: productos[0]?.id ?? "", cantidad: 1 }] }} clientes={clientesAsignados} productos={productos} /></div>;
+  return <div><HeaderComponent Icon={Pencil} screenName="Editar venta" description="En este apartado podrás editar una venta" /><Formulario isUpdate initialData={{ id: venta.id, clienteId: venta.clienteId, total: Number(venta.total), estado: venta.estado, metodoPago: venta.metodoPago, evidenciaTransferenciaB64: venta.evidenciaTransferenciaB64 ?? "", productos: productosVenta.length > 0 ? productosVenta : [{ productoId: productos[0]?.id ?? "", cantidad: 1, precioUnitario: 0, tipoPrecio: "NORMAL" as const }] }} clientes={clientesAsignados} productos={productos} /></div>;
 }

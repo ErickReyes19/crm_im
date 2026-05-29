@@ -6,9 +6,10 @@ import { revalidatePath } from "next/cache";
 import { Venta } from "./schema";
 
 
-function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20") {
+function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20" | "DESCUENTO_30") {
   if (tipoPrecio === "DESCUENTO_10") return precioUnitario.mul(new Prisma.Decimal(0.9));
   if (tipoPrecio === "DESCUENTO_20") return precioUnitario.mul(new Prisma.Decimal(0.8));
+  if (tipoPrecio === "DESCUENTO_30") return precioUnitario.mul(new Prisma.Decimal(0.7));
   return precioUnitario;
 }
 
@@ -95,14 +96,14 @@ export async function createVenta(data: Venta) {
   const session = await getCurrentUser();
   await assertClienteAsignado(data.clienteId, session.IdUser);
   const { detalles, total } = await buildVentaProductos(data.productos);
-  const totalFinal = data.total !== undefined ? new Prisma.Decimal(data.total) : total;
-
   const venta = await prisma.venta.create({
     data: {
       clienteId: data.clienteId,
       usuarioId: session.IdUser,
-      total: totalFinal,
+      total,
       estado: data.estado,
+      metodoPago: data.metodoPago,
+      evidenciaTransferenciaB64: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaB64 : null,
       productos: { create: detalles },
     },
   });
@@ -119,8 +120,6 @@ export async function updateVenta(data: Venta) {
   await assertVentaAccesible(data.id, session.IdUser, session.Permiso);
   await assertClienteAsignado(data.clienteId, session.IdUser);
   const { detalles, total } = await buildVentaProductos(data.productos);
-  const totalFinal = data.total !== undefined ? new Prisma.Decimal(data.total) : total;
-
   const venta = await prisma.$transaction(async (tx) => {
     await tx.ventaProducto.deleteMany({ where: { ventaId: data.id } });
     return tx.venta.update({
@@ -128,8 +127,10 @@ export async function updateVenta(data: Venta) {
       data: {
         clienteId: data.clienteId,
         usuarioId: session.IdUser,
-        total: totalFinal,
+        total,
         estado: data.estado,
+        metodoPago: data.metodoPago,
+        evidenciaTransferenciaB64: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaB64 : null,
         productos: { create: detalles },
       },
     });
@@ -138,4 +139,21 @@ export async function updateVenta(data: Venta) {
   revalidatePath("/ventas");
   revalidatePath("/dashboard");
   return { id: venta.id, total: Number(venta.total) };
+}
+
+export async function cambiarEstadoVenta(id: string, estado: "PROCESO" | "ENVIO" | "ENTREGADA") {
+  const session = await getCurrentUser();
+  if (!session.Permiso?.includes("editar_venta")) throw new Error("No tienes permiso para cambiar el estado de la venta");
+
+  await assertVentaAccesible(id, session.IdUser, session.Permiso);
+
+  const venta = await prisma.venta.update({
+    where: { id },
+    data: { estado },
+    select: { id: true, estado: true },
+  });
+
+  revalidatePath("/ventas");
+  revalidatePath("/dashboard");
+  return venta;
 }

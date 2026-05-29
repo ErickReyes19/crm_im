@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
 import { toast } from "sonner";
+import { saveLoginTasksToast } from "@/components/login-tasks-toast";
 import ForgotPasswordForm from "../../forgot-password/components/forworgot";
 import { loginWithCredentialsAction } from "../actions";
 import { initialLoginState } from "../state";
@@ -30,9 +31,12 @@ export default function Login() {
 
   useEffect(() => {
     if (loginState.ok && loginState.redirect) {
+      if ((loginState.tareasHoy ?? 0) > 0) {
+        saveLoginTasksToast(loginState.tareasHoy ?? 0);
+      }
       router.push(loginState.redirect);
     }
-  }, [loginState.ok, loginState.redirect, router]);
+  }, [loginState.ok, loginState.redirect, loginState.tareasHoy, router]);
 
   return (
     <>

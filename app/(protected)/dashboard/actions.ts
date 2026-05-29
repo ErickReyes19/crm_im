@@ -23,11 +23,13 @@ export type DashboardMetrics = {
     totalClientes: number;
     totalVentas: number;
     totalProductos: number;
+    clientesSinNotas: number;
   };
   productosMasVendidos: Array<{ id: string; nombre: string; cantidad: number; total: number }>;
   productosMenosVendidos: Array<{ id: string; nombre: string; cantidad: number; total: number }>;
   topClientesConMasVentas: Array<{ id: string; nombre: string; cantidadVentas: number; total: number }>;
-  topClientesSinVentas: Array<{ id: string; nombre: string; ultimaVenta: string | null }>
+  topClientesSinVentas: Array<{ id: string; nombre: string; ultimaVenta: string | null }>;
+  clientesUltimaNota: Array<{ id: string; nombre: string; ultimaNota: string | null; diasDesdeUltimaNota: number | null }>;
   tareasHoy: Array<{ id: string; titulo: string; estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA"; cliente: string; fechaObjetivo: string }>;
 };
 
@@ -160,6 +162,12 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
           orderBy: { createAt: "desc" },
           take: 1,
         },
+        notas: {
+          where: { usuarioId: { in: usuariosObjetivo } },
+          select: { createAt: true },
+          orderBy: { createAt: "desc" },
+          take: 1,
+        },
       },
       orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
     }),
@@ -206,6 +214,27 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     : [];
   const clientesPorId = new Map(clientesTop.map((cliente) => [cliente.id, `${cliente.nombre} ${cliente.apellido}`]));
   const clientesConVentasEnRango = new Set(clientesVendidosGroup.map((item) => item.clienteId));
+  const hoyReferencia = new Date(Date.UTC(inicioHoy.getUTCFullYear(), inicioHoy.getUTCMonth(), inicioHoy.getUTCDate()));
+  const clientesUltimaNota = clientesVisibles
+    .map((cliente) => {
+      const ultimaNota = cliente.notas[0]?.createAt ?? null;
+      const diasDesdeUltimaNota = ultimaNota
+        ? Math.max(0, Math.floor((hoyReferencia.getTime() - new Date(Date.UTC(ultimaNota.getUTCFullYear(), ultimaNota.getUTCMonth(), ultimaNota.getUTCDate())).getTime()) / DAY_IN_MS))
+        : null;
+
+      return {
+        id: cliente.id,
+        nombre: `${cliente.nombre} ${cliente.apellido}`.trim(),
+        ultimaNota: ultimaNota?.toISOString().slice(0, 10) ?? null,
+        diasDesdeUltimaNota,
+      };
+    })
+    .sort((a, b) => {
+      if (a.diasDesdeUltimaNota === null && b.diasDesdeUltimaNota === null) return a.nombre.localeCompare(b.nombre);
+      if (a.diasDesdeUltimaNota === null) return -1;
+      if (b.diasDesdeUltimaNota === null) return 1;
+      return b.diasDesdeUltimaNota - a.diasDesdeUltimaNota || a.nombre.localeCompare(b.nombre);
+    });
 
   return {
     range: {
@@ -221,6 +250,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       totalClientes,
       totalVentas,
       totalProductos,
+      clientesSinNotas: clientesUltimaNota.filter((cliente) => cliente.ultimaNota === null).length,
     },
     productosMasVendidos: productosVendidos.sort((a, b) => b.cantidad - a.cantidad || b.total - a.total).slice(0, 5),
     productosMenosVendidos,
@@ -237,6 +267,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       cliente: `${t.nota.cliente.nombre} ${t.nota.cliente.apellido}`.trim(),
       fechaObjetivo: t.fechaObjetivo.toISOString().slice(0, 10),
     })),
+    clientesUltimaNota: clientesUltimaNota.slice(0, 10),
     topClientesSinVentas: clientesVisibles
       .filter((cliente) => !clientesConVentasEnRango.has(cliente.id))
       .map((cliente) => ({
