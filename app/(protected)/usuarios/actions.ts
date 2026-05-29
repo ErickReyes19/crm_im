@@ -41,7 +41,7 @@ export async function createUsuario(data: Usuario): Promise<Usuario> {
 
   const newUser = await prisma.usuarios.create({ data: { id: randomUUID(), usuario: data.usuario, rol_id: data.rol_id, email: data.email, contrasena: hashed, activo: true, DebeCambiarPassword: false, adminPadreId } });
   revalidatePath("/usuarios");
-  return { usuario: { id: newUser.id, usuario: newUser.usuario, rol: "", email: newUser.email, nombre: newUser.nombre ?? "", fotoUrl: newUser.fotoUrl ?? "", telefono: newUser.telefono ?? "", ciudad: newUser.ciudad ?? "", direccion: newUser.direccion ?? "", rol_id: newUser.rol_id, activo: newUser.activo } };
+  return { id: newUser.id, usuario: newUser.usuario, rol: "", email: newUser.email, nombre: newUser.nombre ?? "", fotoUrl: newUser.fotoUrl ?? "", telefono: newUser.telefono ?? "", ciudad: newUser.ciudad ?? "", direccion: newUser.direccion ?? "", rol_id: newUser.rol_id, activo: newUser.activo };
 }
 
 export async function updateUsuario(data: Usuario): Promise<Usuario> {

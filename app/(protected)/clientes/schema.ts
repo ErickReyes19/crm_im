@@ -5,6 +5,7 @@ export const ClienteSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"),
   apellido: z.string().min(1, "El apellido es requerido"),
   ciudad: z.string().min(1, "La ciudad es requerida"),
+  correo: z.string().email("Correo inválido"),
   numero: z.string().min(1, "El número de contacto es requerido"),
   etiqueta: z.enum(["NUEVO", "INTERESADO"]),
   usuarioAsignadoId: z.string().optional(),
