@@ -30,9 +30,12 @@ export default function Login() {
 
   useEffect(() => {
     if (loginState.ok && loginState.redirect) {
+      if ((loginState.tareasHoy ?? 0) > 0) {
+        toast.info(`Tienes ${loginState.tareasHoy} tarea${loginState.tareasHoy === 1 ? "" : "s"} para hoy. Te llevamos al módulo de tareas.`);
+      }
       router.push(loginState.redirect);
     }
-  }, [loginState.ok, loginState.redirect, router]);
+  }, [loginState.ok, loginState.redirect, loginState.tareasHoy, router]);
 
   return (
     <>

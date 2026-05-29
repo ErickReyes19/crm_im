@@ -45,5 +45,6 @@ export async function loginWithCredentialsAction(
     ok: true,
     message: "Inicio de sesión exitoso.",
     redirect: result.redirect ?? "/profile",
+    tareasHoy: result.tareasHoy ?? 0,
   };
 }

@@ -13,7 +13,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import { BarChart3, ClipboardList, HandCoins, LayersIcon, Package, StickyNote, UserIcon, Users, UserRoundCheck, type LucideIcon } from "lucide-react";
+import { Activity, BarChart3, ClipboardList, HandCoins, LayersIcon, Package, StickyNote, UserIcon, Users, UserRoundCheck, type LucideIcon } from "lucide-react";
 
 type SidebarModule = {
   title: string;
@@ -34,6 +34,7 @@ const modules: SidebarModule[] = [
   { title: "Ventas", url: "/ventas", icon: HandCoins, permiso: "ver_ventas" },
   { title: "Notas", url: "/notas", icon: StickyNote, permiso: "ver_clientes" },
   { title: "Tareas", url: "/tareas", icon: ClipboardList, permiso: "ver_tareas" },
+  { title: "Accesos", url: "/accesos", icon: Activity, permiso: "ver_online" },
 ];
 
 export async function AppSidebar() {

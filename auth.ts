@@ -118,6 +118,16 @@ export const getSessionPermisos = async () => {
 // ------------------------------
 export const signOut = async () => {
   const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  const session = token ? await decrypt(token) : null;
+
+  if (session?.IdUser) {
+    await prisma.usuarios.update({
+      where: { id: session.IdUser },
+      data: { estaOnline: false, ultimaActividad: new Date() },
+    }).catch((err) => console.error("signOut status error:", err));
+  }
+
   cookieStore.delete("session");
 };
 
@@ -148,7 +158,10 @@ export const login = async (
     success: "Login OK",
     redirect: authResult.debeCambiar
       ? "/reset-password"
-      : redirect,
+      : authResult.tareasHoy > 0
+        ? "/tareas"
+        : redirect,
+    tareasHoy: authResult.debeCambiar ? 0 : authResult.tareasHoy,
   };
 };
 
@@ -210,6 +223,25 @@ async function authenticateDB(username: string, password: string) {
       (rp) => rp.permiso.nombre
     );
 
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTomorrow = new Date(startOfToday);
+    startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+
+    const tareasHoy = await prisma.tarea.count({
+      where: {
+        usuarioId: user.id,
+        estado: { not: "COMPLETADA" },
+        fechaObjetivo: { gte: startOfToday, lt: startOfTomorrow },
+      },
+    });
+
+    await prisma.usuarios.update({
+      where: { id: user.id },
+      data: { ultimoInicioSesion: now, ultimaActividad: now, estaOnline: true },
+    });
+
     const payload: UsuarioSesion = {
       IdUser: user.id,
       User: user.usuario,
@@ -226,6 +258,7 @@ async function authenticateDB(username: string, password: string) {
     return {
       token: await encrypt(payload),
       debeCambiar: payload.DebeCambiar,
+      tareasHoy,
     };
   } catch (err) {
     console.error("authenticateDB error:", err);

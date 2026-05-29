@@ -64,6 +64,9 @@ model Usuarios {
   productos           Producto[]          @relation("UsuarioProductos")
   notas               Nota[]
   tareas              Tarea[]
+  ultimoInicioSesion  DateTime?
+  ultimaActividad     DateTime?
+  estaOnline          Boolean              @default(false)
   adminPadreId        String?              @db.VarChar(36)
   adminPadre          Usuarios?            @relation("AdminVendedores", fields: [adminPadreId], references: [id])
   vendedores          Usuarios[]           @relation("AdminVendedores")
@@ -106,6 +109,12 @@ enum TipoPrecioVenta {
   NORMAL
   DESCUENTO_10
   DESCUENTO_20
+  DESCUENTO_30
+}
+
+enum MetodoPagoVenta {
+  EFECTIVO
+  TRANSFERENCIA
 }
 
 model Cliente {
@@ -151,6 +160,8 @@ model Venta {
   usuarioId String     @db.VarChar(36)
   total     Decimal    @db.Decimal(10, 2)
   estado    EstadoVenta @default(PROCESO)
+  metodoPago MetodoPagoVenta @default(EFECTIVO)
+  evidenciaTransferenciaB64 String? @db.LongText
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
 

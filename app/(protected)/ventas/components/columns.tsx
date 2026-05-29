@@ -10,6 +10,7 @@ export type VentaTableRow = {
   clienteId: string;
   total?: number;
   estado: "PROCESO" | "ENVIO" | "ENTREGADA";
+  metodoPago?: "EFECTIVO" | "TRANSFERENCIA";
   cliente?: { nombre: string; apellido: string } | null;
   usuario?: { usuario: string } | null;
   productos?: Array<{ cantidad: number; subtotal: number; producto?: { nombre: string } | null }>;
@@ -42,6 +43,7 @@ export const columns: ColumnDef<VentaTableRow>[] = [
     cell: ({ row }) => row.original.productos?.length ? row.original.productos.map((detalle) => `${detalle.cantidad} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ") : "Sin productos",
   },
   { accessorKey: "estado", header: "Estado" },
+  { id: "metodoPago", header: "Pago", cell: ({ row }) => row.original.metodoPago === "TRANSFERENCIA" ? "Transferencia" : "Efectivo" },
   {
     id: "actions",
     header: "Acciones",
