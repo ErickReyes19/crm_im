@@ -28,6 +28,7 @@ export function Formulario({
     defaultValues: initialData,
   });
 
+  console.log("Form values:", form.getValues()); // Depuración de valores del formulario
   async function onSubmit(data: ClienteFormOutput) {
     try {
       if (isUpdate) {
