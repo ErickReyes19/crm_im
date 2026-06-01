@@ -3,6 +3,7 @@ import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatHondurasDateTime } from "@/lib/date-format";
 import { CalendarDays, FileImage, Pencil, StickyNote, UserRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -31,7 +32,7 @@ export default async function NotaDetailPage({ params }: { params: Promise<{ id:
 
         <div className="mb-4 grid gap-3 text-sm text-muted-foreground md:grid-cols-2">
           <p className="flex items-center gap-2"><UserRound className="h-4 w-4" />Registrada por: <span className="font-medium text-foreground">{nota.usuario?.usuario ?? "Usuario"}</span></p>
-          <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4" />Fecha: <span className="font-medium text-foreground">{nota.createAt.toISOString().slice(0, 10)}</span></p>
+          <p className="flex items-center gap-2"><CalendarDays className="h-4 w-4" />Fecha: <span className="font-medium text-foreground">{formatHondurasDateTime(nota.createAt)}</span></p>
         </div>
 
         <div className="rounded-xl border bg-background p-4">
