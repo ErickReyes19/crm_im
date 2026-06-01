@@ -6,6 +6,16 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { PermisosRol, Rol as RolDTO } from "./schema";
 
+const ROLES_BASE_PROTEGIDOS = new Set(["SUPER_ADMIN", "ADMINISTRADOR", "VENDEDOR"]);
+
+function normalizarNombreRol(nombre: string) {
+  return nombre.trim().toUpperCase();
+}
+
+function esRolBaseProtegido(nombre: string) {
+  return ROLES_BASE_PROTEGIDOS.has(normalizarNombreRol(nombre));
+}
+
 export async function getRolesPermisos(): Promise<RolDTO[]> {
   try {
     const roles = await prisma.rol.findMany({
@@ -71,12 +81,21 @@ export async function putRol({ rol }: { rol: RolDTO }): Promise<RolDTO | null> {
   }));
 
   try {
+    const rolActual = await prisma.rol.findUnique({
+      where: { id: rol.id! },
+      select: { nombre: true },
+    });
+
+    if (!rolActual) return null;
+
+    const esProtegido = esRolBaseProtegido(rolActual.nombre);
+
     const updated = await prisma.rol.update({
       where: { id: rol.id! },
       data: {
-        nombre: rol.nombre,
+        nombre: esProtegido ? rolActual.nombre : rol.nombre,
         descripcion: rol.descripcion,
-        activo: rol.activo ?? true,
+        activo: esProtegido ? true : rol.activo ?? true,
         permisos: {
           // 1) Eliminamos todas las filas RolPermiso existentes
           deleteMany: {},
@@ -155,6 +174,10 @@ export async function postRol({
   rol: RolDTO;
 }): Promise<RolDTO | null> {
   try {
+    if (esRolBaseProtegido(rol.nombre)) {
+      throw new Error("Los roles base protegidos ya están definidos por el seed");
+    }
+
     const created = await prisma.rol.create({
       data: {
         // Generamos un UUID para el rol

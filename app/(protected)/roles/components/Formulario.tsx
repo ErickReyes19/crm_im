@@ -24,6 +24,8 @@ import { RolSchema } from "../schema";
 import { CheckboxPermisos } from "./checkboxForm";
 import { toast } from "sonner";
 
+const ROLES_BASE_PROTEGIDOS = new Set(["SUPER_ADMIN", "ADMINISTRADOR", "VENDEDOR"]);
+
 export function FormularioRol({
   isUpdate,
   initialData,
@@ -34,6 +36,12 @@ export function FormularioRol({
   permisos: Permiso[];
 }) {
   const router = useRouter();
+
+  const esRolBaseProtegido = Boolean(
+    isUpdate &&
+    initialData?.nombre &&
+    ROLES_BASE_PROTEGIDOS.has(initialData.nombre.trim().toUpperCase())
+  );
 
   const form = useForm<z.infer<typeof RolSchema>>({
     resolver: zodResolver(RolSchema),
@@ -76,10 +84,16 @@ export function FormularioRol({
           <Field data-invalid={fieldState.invalid}>
             <FieldLabel>Nombre del Rol</FieldLabel>
             <FieldContent>
-              <Input placeholder="Ingresa el nombre del rol" {...field} />
+              <Input
+                placeholder="Ingresa el nombre del rol"
+                disabled={esRolBaseProtegido}
+                {...field}
+              />
             </FieldContent>
             <FieldDescription>
-              Por favor ingresa el nombre del rol.
+              {esRolBaseProtegido
+                ? "Este rol base está protegido y no puede renombrarse."
+                : "Por favor ingresa el nombre del rol."}
             </FieldDescription>
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
@@ -148,7 +162,7 @@ export function FormularioRol({
                     field.onChange(value === "true")
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger disabled={esRolBaseProtegido}>
                     <SelectValue placeholder="Selecciona el estado" />
                   </SelectTrigger>
                   <SelectContent>
@@ -158,7 +172,9 @@ export function FormularioRol({
                 </Select>
               </FieldContent>
               <FieldDescription>
-                Define si el rol está activo o inactivo.
+                {esRolBaseProtegido
+                  ? "Este rol base está protegido y siempre permanece activo."
+                  : "Define si el rol está activo o inactivo."}
               </FieldDescription>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
             </Field>
