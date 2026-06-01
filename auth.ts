@@ -81,7 +81,7 @@ const setSessionCookie = async (token: string) => {
     httpOnly: true,
     path: "/",
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    // secure: process.env.NODE_ENV === "production",
     expires: new Date(Date.now() + 6 * 60 * 60 * 1000),
   });
 };
