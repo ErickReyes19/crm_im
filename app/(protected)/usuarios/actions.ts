@@ -4,14 +4,34 @@ import { getSession } from "@/auth";
 import { getScopedUserIds } from "@/lib/access-scope";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { randomBytes, randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
-import { randomUUID } from "crypto";
 import { Usuario } from "./schema";
 
 async function requireSession() {
   const session = await getSession();
   if (!session?.IdUser) throw new Error("Sesión requerida");
   return session;
+}
+
+function isSuperAdminRole(roleName?: string | null) {
+  return roleName?.trim().toUpperCase() === "SUPER_ADMIN";
+}
+
+function generateTemporaryPassword() {
+  return `${randomBytes(6).toString("base64url")}#${randomBytes(3).toString("hex")}A1`;
+}
+
+async function assertCanUseRole(roleId: string) {
+  const session = await requireSession();
+  const role = await prisma.rol.findUnique({ where: { id: roleId }, select: { nombre: true, activo: true } });
+  if (!role || !role.activo) throw new Error("Rol inválido");
+
+  if (isSuperAdminRole(role.nombre) && !isSuperAdminRole(session.Rol)) {
+    throw new Error("Solo un SUPER_ADMIN puede asignar el rol SUPER_ADMIN");
+  }
+
+  return { session, role };
 }
 
 export async function getUsuarios(): Promise<Usuario[]> {
@@ -25,12 +45,9 @@ export async function getUsuarios(): Promise<Usuario[]> {
 }
 
 export async function createUsuario(data: Usuario): Promise<Usuario> {
-  const session = await requireSession();
   if (!data.password?.trim()) throw new Error("La contraseña es requerida");
   const hashed = await bcrypt.hash(data.password.trim(), 10);
-
-  const role = await prisma.rol.findUnique({ where: { id: data.rol_id }, select: { nombre: true } });
-  if (!role) throw new Error("Rol inválido");
+  const { session, role } = await assertCanUseRole(data.rol_id);
 
   let adminPadreId: string | null = null;
   const isSuper = session.Permiso?.includes("ver_todos_usuarios") ?? false;
@@ -45,13 +62,38 @@ export async function createUsuario(data: Usuario): Promise<Usuario> {
 }
 
 export async function updateUsuario(data: Usuario): Promise<Usuario> {
-  const session = await requireSession();
+  const { session } = await assertCanUseRole(data.rol_id);
+  if (!session.Permiso?.includes("editar_usuario")) throw new Error("No autorizado");
+
   const scopedIds = await getScopedUserIds(session);
   if (!data.id || !scopedIds.includes(data.id)) throw new Error("No autorizado");
 
   const updated = await prisma.usuarios.update({ where: { id: data.id }, data: { usuario: data.usuario, rol_id: data.rol_id, activo: data.activo, email: data.email } });
   revalidatePath("/usuarios");
   return { id: updated.id, usuario: updated.usuario, rol: "", rol_id: updated.rol_id, email: updated.email, nombre: updated.nombre ?? "", fotoUrl: updated.fotoUrl ?? "", telefono: updated.telefono ?? "", ciudad: updated.ciudad ?? "", direccion: updated.direccion ?? "", activo: updated.activo };
+}
+
+export async function resetUsuarioPassword(userId: string): Promise<{ password: string }> {
+  const session = await requireSession();
+  if (!session.Permiso?.includes("editar_usuario")) throw new Error("No autorizado");
+
+  const scopedIds = await getScopedUserIds(session);
+  if (!scopedIds.includes(userId)) throw new Error("No autorizado");
+
+  const password = generateTemporaryPassword();
+  const hashed = await bcrypt.hash(password, 10);
+
+  await prisma.usuarios.update({
+    where: { id: userId },
+    data: {
+      contrasena: hashed,
+      DebeCambiarPassword: true,
+    },
+  });
+
+  revalidatePath("/usuarios");
+  revalidatePath(`/usuarios/${userId}/edit`);
+  return { password };
 }
 
 export async function getUsuarioById(id: string): Promise<Usuario | null> {

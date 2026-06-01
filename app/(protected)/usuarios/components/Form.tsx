@@ -22,10 +22,47 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Copy, RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { createUsuario, updateUsuario } from "../actions";
+import { createUsuario, resetUsuarioPassword, updateUsuario } from "../actions";
 import { Usuario, UsuarioSchema } from "../schema";
+
+function generateClientPassword() {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@#$%";
+  const values = new Uint32Array(14);
+  crypto.getRandomValues(values);
+  return Array.from(values, (value) => alphabet[value % alphabet.length]).join("");
+}
+
+async function copyTextToClipboard(text: string) {
+  if (!text.trim()) return false;
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Continue with fallback for browsers/contexts that expose Clipboard API but block it.
+    }
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.left = "-9999px";
+  textArea.style.top = "0";
+  document.body.appendChild(textArea);
+  textArea.select();
+  textArea.setSelectionRange(0, textArea.value.length);
+
+  try {
+    return document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
 
 export function Formulario({
   isUpdate,
@@ -37,6 +74,8 @@ export function Formulario({
   roles: Rol[];
 }) {
   const router = useRouter();
+  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const form = useForm<z.infer<typeof UsuarioSchema>>({
     resolver: zodResolver(UsuarioSchema),
@@ -64,8 +103,24 @@ export function Formulario({
 
       router.push("/usuarios");
       router.refresh();
-    } catch {
-      toast.error("Hubo un problema al guardar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Hubo un problema al guardar.");
+    }
+  }
+
+  async function onResetPassword() {
+    if (!initialData?.id) return;
+
+    try {
+      setIsResettingPassword(true);
+      const result = await resetUsuarioPassword(initialData.id);
+      setTemporaryPassword(result.password);
+      const copied = await copyTextToClipboard(result.password);
+      toast.success(copied ? "Contraseña restablecida y copiada al portapapeles." : "Contraseña restablecida. Cópiala manualmente desde el campo.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Hubo un problema al restablecer la contraseña.");
+    } finally {
+      setIsResettingPassword(false);
     }
   }
 
@@ -125,12 +180,11 @@ export function Formulario({
               <FieldContent className="flex gap-2">
                 <Input placeholder="Contraseña" type="text" {...field} value={field.value ?? ""} />
                 <Button type="button" variant="outline" onClick={() => {
-                  const randomPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase();
-                  form.setValue("password", randomPassword);
+                  form.setValue("password", generateClientPassword(), { shouldDirty: true, shouldValidate: true });
                 }}><RefreshCcw className="h-4 w-4" /></Button>
                 <Button type="button" variant="outline" onClick={async () => {
-                  await navigator.clipboard.writeText(field.value ?? "");
-                  toast.success("Contraseña copiada.");
+                  const copied = await copyTextToClipboard(form.getValues("password") ?? "");
+                  toast[copied ? "success" : "error"](copied ? "Contraseña copiada." : "No se pudo copiar. Selecciona y copia la contraseña manualmente.");
                 }}><Copy className="h-4 w-4" /></Button>
               </FieldContent>
               <FieldDescription>
@@ -178,6 +232,48 @@ export function Formulario({
           </Field>
         )}
       />
+
+      {/* Restablecer contraseña (solo update) */}
+      {isUpdate && (
+        <Field>
+          <FieldLabel>Restablecer contraseña</FieldLabel>
+          <FieldContent className="space-y-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button type="button" variant="outline" onClick={onResetPassword} disabled={isResettingPassword}>
+                {isResettingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Restableciendo...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Generar contraseña temporal
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!temporaryPassword}
+                onClick={async () => {
+                  const copied = await copyTextToClipboard(temporaryPassword);
+                  toast[copied ? "success" : "error"](copied ? "Contraseña copiada." : "No se pudo copiar. Selecciona y copia la contraseña manualmente.");
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar
+              </Button>
+            </div>
+            {temporaryPassword && (
+              <Input readOnly value={temporaryPassword} className="font-mono" aria-label="Contraseña temporal generada" />
+            )}
+          </FieldContent>
+          <FieldDescription>
+            Genera una contraseña aleatoria. El usuario deberá cambiarla al iniciar sesión en /reset-password.
+          </FieldDescription>
+        </Field>
+      )}
 
       {/* Estado (solo update) */}
       {isUpdate && (

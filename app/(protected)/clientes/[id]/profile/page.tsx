@@ -4,6 +4,7 @@ import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatHondurasDateTime } from "@/lib/date-format";
 import { Building2, FileText, MapPin, Phone, StickyNote, UserRound } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -65,7 +66,7 @@ export default async function ClienteProfilePage({ params }: { params: Promise<{
                   </div>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="mb-4 text-xs text-muted-foreground">{nota.createAt.toISOString().slice(0, 10)} · {nota.evidencias.length} evidencias</p>
+                <p className="mb-4 text-xs text-muted-foreground">{formatHondurasDateTime(nota.createAt)} · {nota.evidencias.length} evidencias</p>
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/notas/${nota.id}`}>Ver nota</Link>
                 </Button>
