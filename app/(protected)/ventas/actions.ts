@@ -1,5 +1,6 @@
 "use server";
 import { getSession } from "@/auth";
+import { getScopedUserIds } from "@/lib/access-scope";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma";
 import { revalidatePath } from "next/cache";
@@ -16,10 +17,10 @@ function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" |
 
 export async function getVentas() {
   const session = await getCurrentUser();
-  const puedeVerTodas = session.Permiso?.includes("ver_todas_ventas") ?? false;
+  const ventaScopeWhere = await getVentaScopeWhere(session);
 
   return prisma.venta.findMany({
-    where: puedeVerTodas ? undefined : { usuarioId: session.IdUser },
+    where: ventaScopeWhere,
     include: {
       cliente: true,
       usuario: { select: { usuario: true } },
@@ -31,10 +32,10 @@ export async function getVentas() {
 
 export async function getVentaById(id: string) {
   const session = await getCurrentUser();
-  const puedeVerTodas = session.Permiso?.includes("ver_todas_ventas") ?? false;
+  const ventaScopeWhere = await getVentaScopeWhere(session);
 
   return prisma.venta.findFirst({
-    where: { id, ...(puedeVerTodas ? {} : { usuarioId: session.IdUser }) },
+    where: { id, ...ventaScopeWhere },
     include: { productos: { include: { producto: { select: { id: true, nombre: true } } } } },
   });
 }
@@ -45,11 +46,15 @@ async function getCurrentUser() {
   return session;
 }
 
+async function getVentaScopeWhere(session: Awaited<ReturnType<typeof getCurrentUser>>): Promise<Prisma.VentaWhereInput> {
+  const scopedUserIds = await getScopedUserIds(session);
+  return { cliente: { usuarioAsignadoId: { in: scopedUserIds } } };
+}
 
-async function assertVentaAccesible(ventaId: string, usuarioId: string, permisos: string[] | undefined) {
-  const puedeVerTodas = permisos?.includes("ver_todas_ventas") ?? false;
+async function assertVentaAccesible(ventaId: string, session: Awaited<ReturnType<typeof getCurrentUser>>) {
+  const ventaScopeWhere = await getVentaScopeWhere(session);
   const venta = await prisma.venta.findFirst({
-    where: { id: ventaId, ...(puedeVerTodas ? {} : { usuarioId }) },
+    where: { id: ventaId, ...ventaScopeWhere },
     select: { id: true },
   });
 
@@ -117,7 +122,7 @@ export async function updateVenta(data: Venta) {
   if (!data.id) throw new Error("ID de venta requerido");
 
   const session = await getCurrentUser();
-  await assertVentaAccesible(data.id, session.IdUser, session.Permiso);
+  await assertVentaAccesible(data.id, session);
   await assertClienteAsignado(data.clienteId, session.IdUser);
   const { detalles, total } = await buildVentaProductos(data.productos);
   const venta = await prisma.$transaction(async (tx) => {
@@ -145,7 +150,7 @@ export async function cambiarEstadoVenta(id: string, estado: "PROCESO" | "ENVIO"
   const session = await getCurrentUser();
   if (!session.Permiso?.includes("editar_venta")) throw new Error("No tienes permiso para cambiar el estado de la venta");
 
-  await assertVentaAccesible(id, session.IdUser, session.Permiso);
+  await assertVentaAccesible(id, session);
 
   const venta = await prisma.venta.update({
     where: { id },
