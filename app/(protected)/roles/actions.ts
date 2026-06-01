@@ -29,7 +29,7 @@ export async function getRolesPermisos(): Promise<RolDTO[]> {
     });
 
     // Mapear al DTO
-    return roles.map((r) => ({
+    return roles.filter((r) => r.activo).map((r) => ({
       id: r.id,
       nombre: r.nombre,
       descripcion: r.descripcion,
@@ -58,7 +58,7 @@ export async function getRolesPermisosActivos(): Promise<RolDTO[]> {
     });
 
     // Mapear al DTO
-    return roles.map((r) => ({
+    return roles.filter((r) => r.activo).map((r) => ({
       id: r.id,
       nombre: r.nombre,
       descripcion: r.descripcion,
@@ -225,11 +225,11 @@ export async function getRolesPermitidosParaFormularioUsuario(): Promise<RolDTO[
   const session = await getSession();
   if (!session?.IdUser) return [];
 
-  const esSuperAdmin = session.Permiso?.includes("super_admin") ?? false;
+  const esSuperAdmin = session.Rol?.toUpperCase() === "SUPER_ADMIN";
 
   const roles = await getRolesPermisosActivos();
   if (esSuperAdmin) {
-    return roles.filter((r) => r.nombre.toUpperCase() !== "SUPER_ADMIN");
+    return roles;
   }
 
   const bloqueados = new Set(["SUPER_ADMIN", "ADMINISTRADOR"]);

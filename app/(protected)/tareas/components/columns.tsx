@@ -1,4 +1,5 @@
 "use client";
+import { formatHondurasDate } from "@/lib/date-format";
 import { cambiarEstadoTarea } from "../actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,6 @@ export const columns: ColumnDef<TareaTableRow>[] = [
   { id: "cliente", accessorFn: (t) => `${t.nota.cliente.nombre} ${t.nota.cliente.apellido}`, header: "Cliente", cell: ({ row }) => `${row.original.nota.cliente.nombre} ${row.original.nota.cliente.apellido}` },
   { accessorKey: "descripcion", header: "Descripción", cell: ({ row }) => <span className="line-clamp-2">{row.original.descripcion ?? "-"}</span> },
   { accessorKey: "estado", header: "Estado", cell: ({ row }) => <Badge variant="outline">{row.original.estado}</Badge> },
-  { id: "fechaObjetivo", accessorFn: (t) => t.fechaObjetivo, header: "Fecha / alerta", cell: ({ row }) => { const alert = getAlert(row.original.fechaObjetivo); return <div><p>{new Date(row.original.fechaObjetivo).toISOString().slice(0, 10)}</p><p className={`text-xs font-medium inline-flex items-center gap-1 ${alert.className}`}><alert.Icon className="h-3.5 w-3.5" />{alert.text}</p></div>; } },
+  { id: "fechaObjetivo", accessorFn: (t) => t.fechaObjetivo, header: "Fecha / alerta", cell: ({ row }) => { const alert = getAlert(row.original.fechaObjetivo); return <div><p>{formatHondurasDate(row.original.fechaObjetivo)}</p><p className={`text-xs font-medium inline-flex items-center gap-1 ${alert.className}`}><alert.Icon className="h-3.5 w-3.5" />{alert.text}</p></div>; } },
   { id: "actions", header: "Acciones", cell: ({ row }) => <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Acciones</DropdownMenuLabel><Link href={`/tareas/${row.original.id}/edit`}><DropdownMenuItem>Editar</DropdownMenuItem></Link><DropdownMenuItem onClick={async () => { await cambiarEstadoTarea(row.original.id, "PENDIENTE"); }}>Marcar pendiente</DropdownMenuItem><DropdownMenuItem onClick={async () => { await cambiarEstadoTarea(row.original.id, "EN_PROGRESO"); }}>Marcar en progreso</DropdownMenuItem><DropdownMenuItem onClick={async () => { await cambiarEstadoTarea(row.original.id, "COMPLETADA"); }}>Marcar completada</DropdownMenuItem></DropdownMenuContent></DropdownMenu> },
 ];

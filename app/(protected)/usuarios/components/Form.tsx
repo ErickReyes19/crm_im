@@ -22,9 +22,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { Copy, RefreshCcw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { z } from "zod";
-import { createUsuario, updateUsuario } from "../actions";
+import { createUsuario, resetUsuarioPassword, updateUsuario } from "../actions";
 import { Usuario, UsuarioSchema } from "../schema";
 
 export function Formulario({
@@ -37,6 +38,8 @@ export function Formulario({
   roles: Rol[];
 }) {
   const router = useRouter();
+  const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const form = useForm<z.infer<typeof UsuarioSchema>>({
     resolver: zodResolver(UsuarioSchema),
@@ -64,8 +67,24 @@ export function Formulario({
 
       router.push("/usuarios");
       router.refresh();
-    } catch {
-      toast.error("Hubo un problema al guardar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Hubo un problema al guardar.");
+    }
+  }
+
+  async function onResetPassword() {
+    if (!initialData?.id) return;
+
+    try {
+      setIsResettingPassword(true);
+      const result = await resetUsuarioPassword(initialData.id);
+      setTemporaryPassword(result.password);
+      await navigator.clipboard.writeText(result.password);
+      toast.success("Contraseña restablecida y copiada al portapapeles.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Hubo un problema al restablecer la contraseña.");
+    } finally {
+      setIsResettingPassword(false);
     }
   }
 
@@ -178,6 +197,48 @@ export function Formulario({
           </Field>
         )}
       />
+
+      {/* Restablecer contraseña (solo update) */}
+      {isUpdate && (
+        <Field>
+          <FieldLabel>Restablecer contraseña</FieldLabel>
+          <FieldContent className="space-y-3">
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button type="button" variant="outline" onClick={onResetPassword} disabled={isResettingPassword}>
+                {isResettingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Restableciendo...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                    Generar contraseña temporal
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!temporaryPassword}
+                onClick={async () => {
+                  await navigator.clipboard.writeText(temporaryPassword);
+                  toast.success("Contraseña copiada.");
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Copiar
+              </Button>
+            </div>
+            {temporaryPassword && (
+              <Input readOnly value={temporaryPassword} className="font-mono" aria-label="Contraseña temporal generada" />
+            )}
+          </FieldContent>
+          <FieldDescription>
+            Genera una contraseña aleatoria. El usuario deberá cambiarla al iniciar sesión en /reset-password.
+          </FieldDescription>
+        </Field>
+      )}
 
       {/* Estado (solo update) */}
       {isUpdate && (

@@ -4,16 +4,9 @@ import NoAcceso from "@/components/noAccess";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatHondurasDateTime } from "@/lib/date-format";
 import { Activity } from "lucide-react";
 import { getAccesosUsuarios } from "./actions";
-
-function formatFecha(fecha: Date | null) {
-  if (!fecha) return "Sin registro";
-  return new Intl.DateTimeFormat("es-HN", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(fecha);
-}
 
 export default async function AccesosPage() {
   const permisos = await getSessionPermisos();
@@ -65,8 +58,8 @@ export default async function AccesosPage() {
                 <TableCell>{usuario.nombre ?? "Sin nombre"}</TableCell>
                 <TableCell>{usuario.rol}</TableCell>
                 <TableCell><Badge variant={usuario.estaOnline ? "default" : "secondary"}>{usuario.estaOnline ? "Online" : "Offline"}</Badge></TableCell>
-                <TableCell>{formatFecha(usuario.ultimoInicioSesion)}</TableCell>
-                <TableCell>{formatFecha(usuario.ultimaActividad)}</TableCell>
+                <TableCell>{formatHondurasDateTime(usuario.ultimoInicioSesion)}</TableCell>
+                <TableCell>{formatHondurasDateTime(usuario.ultimaActividad)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

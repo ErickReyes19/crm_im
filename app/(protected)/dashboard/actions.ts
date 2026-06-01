@@ -1,6 +1,7 @@
 import { getSession } from "@/auth";
 import { Prisma } from "@/lib/generated/prisma";
 import { getScopedUserIds } from "@/lib/access-scope";
+import { formatHondurasInputDate } from "@/lib/date-format";
 import { prisma } from "@/lib/prisma";
 
 export type DashboardUsuarioOption = { id: string; usuario: string; nombre: string | null };
@@ -225,7 +226,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       return {
         id: cliente.id,
         nombre: `${cliente.nombre} ${cliente.apellido}`.trim(),
-        ultimaNota: ultimaNota?.toISOString().slice(0, 10) ?? null,
+        ultimaNota: ultimaNota ? formatHondurasInputDate(ultimaNota) : null,
         diasDesdeUltimaNota,
       };
     })
@@ -265,7 +266,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       titulo: t.titulo,
       estado: t.estado,
       cliente: `${t.nota.cliente.nombre} ${t.nota.cliente.apellido}`.trim(),
-      fechaObjetivo: t.fechaObjetivo.toISOString().slice(0, 10),
+      fechaObjetivo: formatHondurasInputDate(t.fechaObjetivo),
     })),
     clientesUltimaNota: clientesUltimaNota.slice(0, 10),
     topClientesSinVentas: clientesVisibles
@@ -273,7 +274,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       .map((cliente) => ({
         id: cliente.id,
         nombre: `${cliente.nombre} ${cliente.apellido}`,
-        ultimaVenta: cliente.ventas[0]?.createAt.toISOString().slice(0, 10) ?? null,
+        ultimaVenta: cliente.ventas[0]?.createAt ? formatHondurasInputDate(cliente.ventas[0].createAt) : null,
       }))
       .slice(0, 5),
   };
