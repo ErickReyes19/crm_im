@@ -1,5 +1,5 @@
 import { getSessionPermisos } from "@/auth";
-import { getClientesAsignadosOpciones } from "@/app/(protected)/clientes/actions";
+import { getClientesOpciones } from "@/app/(protected)/clientes/actions";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { PlusCircle } from "lucide-react";
@@ -9,7 +9,7 @@ export default async function CreateNotaPage({ searchParams }: { searchParams: P
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("crear_notas")) return <NoAcceso />;
 
-  const clientes = await getClientesAsignadosOpciones();
+  const clientes = await getClientesOpciones();
   const { clienteId } = await searchParams;
 
   return <div className="container mx-auto py-2 space-y-4">

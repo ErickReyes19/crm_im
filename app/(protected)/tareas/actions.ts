@@ -1,5 +1,6 @@
 "use server";
 import { getSession } from "@/auth";
+import { getScopedUserIds } from "@/lib/access-scope";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Tarea } from "./schema";
@@ -10,11 +11,39 @@ async function getCurrentUser() {
   return session;
 }
 
-export async function getNotasOpciones() {
+async function getScopedIdsForCurrentUser() {
   const session = await getCurrentUser();
+  const scopedUserIds = await getScopedUserIds(session);
+  return { session, scopedUserIds };
+}
+
+export async function getClientesConNotasOpciones() {
+  const { scopedUserIds } = await getScopedIdsForCurrentUser();
+
+  return prisma.cliente.findMany({
+    where: {
+      activo: true,
+      usuarioAsignadoId: { in: scopedUserIds },
+      notas: { some: {} },
+    },
+    select: { id: true, nombre: true, apellido: true },
+    orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
+  });
+}
+
+export async function getNotasOpcionesByCliente(clienteId: string) {
+  if (!clienteId) return [];
+
+  const { scopedUserIds } = await getScopedIdsForCurrentUser();
+  const cliente = await prisma.cliente.findFirst({
+    where: { id: clienteId, usuarioAsignadoId: { in: scopedUserIds } },
+    select: { id: true },
+  });
+  if (!cliente) throw new Error("No tienes acceso al cliente seleccionado");
+
   return prisma.nota.findMany({
-    where: session.Permiso?.includes("ver_todos_clientes") ? undefined : { cliente: { usuarioAsignadoId: session.IdUser } },
-    select: { id: true, contenido: true, cliente: { select: { nombre: true, apellido: true } } },
+    where: { clienteId, cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
+    select: { id: true, contenido: true, clienteId: true, cliente: { select: { nombre: true, apellido: true } } },
     orderBy: { createAt: "desc" },
     take: 100,
   });
@@ -31,13 +60,24 @@ export async function getTareas() {
 
 export async function getTareaById(id: string) {
   const session = await getCurrentUser();
-  return prisma.tarea.findFirst({ where: { id, usuarioId: session.IdUser } });
+  return prisma.tarea.findFirst({
+    where: { id, usuarioId: session.IdUser },
+    include: { nota: { select: { clienteId: true } } },
+  });
+}
+
+async function assertNotaInScope(notaId: string) {
+  const { scopedUserIds } = await getScopedIdsForCurrentUser();
+  const nota = await prisma.nota.findFirst({
+    where: { id: notaId, cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
+    select: { id: true },
+  });
+  if (!nota) throw new Error("No tienes acceso a la nota seleccionada");
 }
 
 export async function createTarea(data: Tarea) {
   const session = await getCurrentUser();
-  const nota = await prisma.nota.findFirst({ where: { id: data.notaId, cliente: { usuarioAsignadoId: session.IdUser } }, select: { id: true } });
-  if (!nota) throw new Error("No tienes acceso a la nota seleccionada");
+  await assertNotaInScope(data.notaId);
 
   await prisma.tarea.create({ data: { ...data, usuarioId: session.IdUser } });
   revalidatePath("/tareas");
@@ -48,6 +88,7 @@ export async function updateTarea(data: Tarea) {
   const session = await getCurrentUser();
   const tarea = await prisma.tarea.findFirst({ where: { id: data.id, usuarioId: session.IdUser }, select: { id: true } });
   if (!tarea) throw new Error("Tarea no encontrada");
+  await assertNotaInScope(data.notaId);
 
   await prisma.tarea.update({ where: { id: data.id }, data: { notaId: data.notaId, titulo: data.titulo, descripcion: data.descripcion, fechaObjetivo: data.fechaObjetivo, estado: data.estado } });
   revalidatePath("/tareas");

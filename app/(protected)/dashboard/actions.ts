@@ -100,7 +100,7 @@ export async function getDashboardUsuarios(): Promise<DashboardUsuarioOption[]> 
 
   const scopedUserIds = await getScopedUserIds(session);
   return prisma.usuarios.findMany({
-    where: { activo: true, id: { in: scopedUserIds } },
+    where: { activo: true, id: { in: scopedUserIds, not: session.IdUser } },
     select: { id: true, usuario: true, nombre: true },
     orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
   });
