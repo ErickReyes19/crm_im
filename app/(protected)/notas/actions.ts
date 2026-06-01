@@ -1,6 +1,7 @@
 "use server";
 
 import { getSession } from "@/auth";
+import { getScopedUserIds } from "@/lib/access-scope";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Nota } from "./schema";
@@ -13,10 +14,10 @@ async function getCurrentUser() {
 
 export async function getNotas() {
   const session = await getCurrentUser();
-  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const scopedUserIds = await getScopedUserIds(session);
 
   return prisma.nota.findMany({
-    where: puedeVerTodos ? undefined : { cliente: { usuarioAsignadoId: session.IdUser } },
+    where: { cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
     include: { cliente: { select: { id: true, nombre: true, apellido: true } }, usuario: { select: { id: true, usuario: true } }, evidencias: true },
     orderBy: { createAt: "desc" },
   });
@@ -24,9 +25,10 @@ export async function getNotas() {
 
 export async function getNotaById(id: string) {
   const session = await getCurrentUser();
-  const puedeVerTodos = session.Permiso?.includes("ver_todos_clientes") ?? false;
+  const scopedUserIds = await getScopedUserIds(session);
+
   return prisma.nota.findFirst({
-    where: { id, ...(puedeVerTodos ? {} : { cliente: { usuarioAsignadoId: session.IdUser } }) },
+    where: { id, cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
     include: {
       evidencias: true,
       cliente: { select: { id: true, nombre: true, apellido: true } },
@@ -37,7 +39,8 @@ export async function getNotaById(id: string) {
 
 export async function createNota(data: Nota) {
   const session = await getCurrentUser();
-  const cliente = await prisma.cliente.findFirst({ where: { id: data.clienteId, ...(session.Permiso?.includes("ver_todos_clientes") ? {} : { usuarioAsignadoId: session.IdUser }) }, select: { id: true } });
+  const scopedUserIds = await getScopedUserIds(session);
+  const cliente = await prisma.cliente.findFirst({ where: { id: data.clienteId, usuarioAsignadoId: { in: scopedUserIds } }, select: { id: true } });
   if (!cliente) throw new Error("No tienes acceso al cliente seleccionado");
 
   const nota = await prisma.nota.create({ data: { clienteId: data.clienteId, usuarioId: session.IdUser, contenido: data.contenido, evidencias: { create: (data.evidencias ?? []).map((imagenB64) => ({ imagenB64 })) } } });

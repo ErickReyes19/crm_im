@@ -1,5 +1,5 @@
 import { getSessionPermisos } from "@/auth";
-import { getClientesAsignadosOpciones } from "@/app/(protected)/clientes/actions";
+import { getClientesOpciones } from "@/app/(protected)/clientes/actions";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Pencil } from "lucide-react";
@@ -13,7 +13,7 @@ export default async function EditNotaPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const nota = await getNotaById(id);
   if (!nota) redirect("/notas");
-  const clientes = await getClientesAsignadosOpciones();
+  const clientes = await getClientesOpciones();
 
   return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={Pencil} description="Edita una nota" screenName="Editar nota" /><Formulario isUpdate initialData={{ id: nota.id, clienteId: nota.clienteId, contenido: nota.contenido, evidencias: nota.evidencias.map((e) => e.imagenB64) }} clientes={clientes} /></div>;
 }
