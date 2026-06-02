@@ -2,12 +2,16 @@
 
 "use server";
 
+"use server";
+
+import { login } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { EmailService, MailPayload } from "@/lib/sendEmail";
 import { generateUserCreatedEmailHtml } from "@/lib/templates/createUserEmail";
 import { randomBytes, randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
 import { requestPasswordReset } from "./forgot-password/actions";
+import { LoginActionState } from "./state";
 
 export async function forgotPasswordAction(formData: FormData) {
     const username = formData.get("username");
@@ -89,4 +93,51 @@ export async function registerWithEmailAction(formData: FormData) {
         console.error("Error enviando correo de registro:", err);
         return false;
     }
+}
+
+
+
+export async function loginWithCredentialsAction(
+  _prevState: LoginActionState,
+  formData: FormData,
+): Promise<LoginActionState> {
+  const identifier = formData.get("identifier");
+  const contrasena = formData.get("contrasena");
+
+  if (typeof identifier !== "string" || typeof contrasena !== "string") {
+    return { ok: false, message: "Debes ingresar usuario/correo y contraseña." };
+  }
+
+  const normalizedIdentifier = identifier.trim().toLowerCase();
+  if (!normalizedIdentifier || !contrasena.trim()) {
+    return { ok: false, message: "Debes ingresar usuario/correo y contraseña." };
+  }
+
+  let usuario = normalizedIdentifier;
+
+  if (normalizedIdentifier.includes("@")) {
+    const userByEmail = await prisma.usuarios.findUnique({
+      where: { email: normalizedIdentifier },
+      select: { usuario: true },
+    });
+
+    if (!userByEmail) {
+      return { ok: false, message: "Usuario/correo o contraseña inválidos." };
+    }
+
+    usuario = userByEmail.usuario;
+  }
+
+  const result = await login({ usuario, contrasena }, "/profile");
+
+  if (result.error) {
+    return { ok: false, message: "Usuario/correo o contraseña inválidos." };
+  }
+
+  return {
+    ok: true,
+    message: "Inicio de sesión exitoso.",
+    redirect: result.redirect ?? "/profile",
+    tareasHoy: result.tareasHoy ?? 0,
+  };
 }

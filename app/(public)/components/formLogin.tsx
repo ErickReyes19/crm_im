@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { saveLoginTasksToast } from "@/components/login-tasks-toast";
-import ForgotPasswordForm from "../../forgot-password/components/forworgot";
 import { loginWithCredentialsAction } from "../actions";
+import ForgotPasswordForm from "../forgot-password/components/forworgot";
 import { initialLoginState } from "../state";
 
 function LoginSubmitButton() {
