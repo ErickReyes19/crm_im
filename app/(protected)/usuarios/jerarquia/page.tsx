@@ -18,7 +18,7 @@ async function getData(adminId?: string, vendedorId?: string) {
 
   const selectedAdminId = adminId && admins.some((a) => a.id === adminId) ? adminId : null;
 
-  const vendedores = selectedAdminId
+  const vendedoresBase = selectedAdminId
     ? await prisma.usuarios.findMany({
         where: { adminPadreId: selectedAdminId, activo: true },
         select: { id: true, usuario: true, nombre: true },
@@ -26,8 +26,16 @@ async function getData(adminId?: string, vendedorId?: string) {
       })
     : [];
 
+  const selectedAdmin = selectedAdminId ? admins.find((admin) => admin.id === selectedAdminId) : null;
+  const vendedores = selectedAdmin
+    ? [
+        { ...selectedAdmin, tipo: "Administrador" },
+        ...vendedoresBase.map((vendedor) => ({ ...vendedor, tipo: "Vendedor" })),
+      ]
+    : [];
+
   const selectedVendedorId =
-    vendedorId && vendedores.some((v) => v.id === vendedorId) ? vendedorId : null;
+    vendedorId && vendedores.some((v) => v.id === vendedorId) ? vendedorId : selectedAdminId;
 
   const clientes = selectedVendedorId
     ? await prisma.cliente.findMany({
@@ -49,12 +57,12 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
 
   return (
     <div className="container mx-auto py-2 space-y-4">
-      <HeaderComponent Icon={Users} screenName="Jerarquía de usuarios" description="Selecciona administrador y luego vendedor para consultar sus clientes" />
+      <HeaderComponent Icon={Users} screenName="Jerarquía de usuarios" description="Selecciona administrador y luego vendedor o administrador para consultar sus clientes" />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5" />1) Selecciona Administrador</CardTitle>
-          <CardDescription>Haz click en un administrador para cargar sus vendedores.</CardDescription>
+          <CardDescription>Haz click en un administrador para cargar sus vendedores y sus clientes directos.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {admins.map((admin) => {
@@ -75,9 +83,9 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><MousePointerClick className="h-5 w-5" />2) Selecciona Vendedor</CardTitle>
+          <CardTitle className="flex items-center gap-2"><MousePointerClick className="h-5 w-5" />2) Selecciona Vendedor o Administrador</CardTitle>
           <CardDescription>
-            {selectedAdminId ? "Haz click en un vendedor para ver sus clientes." : "Primero debes seleccionar un administrador."}
+            {selectedAdminId ? "Haz click en el administrador o en un vendedor para ver sus clientes." : "Primero debes seleccionar un administrador."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
@@ -98,7 +106,7 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
                     <p className="font-medium">{v.nombre || v.usuario}</p>
                     <p className="text-xs text-muted-foreground">@{v.usuario}</p>
                   </div>
-                  <Badge variant="secondary">Vendedor</Badge>
+                  <Badge variant={v.tipo === "Administrador" ? "default" : "secondary"}>{v.tipo}</Badge>
                 </Link>
               );
             })
@@ -108,16 +116,16 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5" />3) Clientes del vendedor</CardTitle>
+          <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5" />3) Clientes del usuario seleccionado</CardTitle>
           <CardDescription>
-            {selectedVendedorId ? `Mostrando ${clientes.length} clientes asignados.` : "Selecciona un vendedor para consultar clientes."}
+            {selectedVendedorId ? `Mostrando ${clientes.length} clientes asignados.` : "Selecciona un vendedor o administrador para consultar clientes."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 max-h-[520px] overflow-auto">
           {!selectedVendedorId ? (
-            <p className="text-sm text-muted-foreground">No hay vendedor seleccionado.</p>
+            <p className="text-sm text-muted-foreground">No hay vendedor o administrador seleccionado.</p>
           ) : clientes.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Este vendedor no tiene clientes asignados.</p>
+            <p className="text-sm text-muted-foreground">Este usuario no tiene clientes asignados.</p>
           ) : (
             clientes.map((c) => (
               <div key={c.id} className="rounded-lg border p-3">

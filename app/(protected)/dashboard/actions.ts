@@ -4,6 +4,8 @@ import { getScopedUserIds } from "@/lib/access-scope";
 import { formatHondurasInputDate } from "@/lib/date-format";
 import { prisma } from "@/lib/prisma";
 
+export const DASHBOARD_ALL_USERS_VALUE = "__all__";
+
 export type DashboardUsuarioOption = { id: string; usuario: string; nombre: string | null };
 
 export type DashboardDateRange = {
@@ -73,6 +75,11 @@ function decimalToNumber(value: Prisma.Decimal | number | null | undefined) {
   return Number(value ?? 0);
 }
 
+function isSuperAdminSession(session: Awaited<ReturnType<typeof getSession>>) {
+  const rol = session?.Rol?.toLowerCase();
+  return rol === "super_admin" || rol === "super admin" || session?.Permiso?.includes("super_admin") === true;
+}
+
 export function getCurrentMonthRange() {
   const today = new Date();
   const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
@@ -114,12 +121,17 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
   const dateRange = buildRange(range);
   const scopedUserIds = await getScopedUserIds(session);
 
+  const puedeVerTodo = puedeVerKpisUsuarios && isSuperAdminSession(session) && range.usuarioId === DASHBOARD_ALL_USERS_VALUE;
   const usuarioSeleccionadoId =
     puedeVerKpisUsuarios && range.usuarioId && scopedUserIds.includes(range.usuarioId)
       ? range.usuarioId
       : session.IdUser;
 
-  const usuariosObjetivo = puedeVerKpisUsuarios ? [usuarioSeleccionadoId] : [session.IdUser];
+  const usuariosObjetivo = puedeVerKpisUsuarios
+    ? puedeVerTodo
+      ? scopedUserIds
+      : [usuarioSeleccionadoId]
+    : [session.IdUser];
 
   const ventaWhere: Prisma.VentaWhereInput = {
     createAt: { gte: dateRange.from, lt: dateRange.toExclusive },
@@ -244,7 +256,9 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       label: `${dateRange.fromInput} al ${dateRange.toInput}`,
     },
     scopeLabel: puedeVerKpisUsuarios
-      ? `Ventas de ${usuarioSeleccionadoId === session.IdUser ? "mi usuario" : "usuario seleccionado"}`
+      ? puedeVerTodo
+        ? "Ventas de todos los usuarios"
+        : `Ventas de ${usuarioSeleccionadoId === session.IdUser ? "mi usuario" : "usuario seleccionado"}`
       : "Mis ventas",
     kpis: {
       ventasTotales: decimalToNumber(ventasAggregate._sum.total),
