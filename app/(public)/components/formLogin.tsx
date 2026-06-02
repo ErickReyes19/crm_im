@@ -4,13 +4,10 @@ import { useActionState, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, KeyRound, UserRound } from "lucide-react";
-import { toast } from "sonner";
 import { saveLoginTasksToast } from "@/components/login-tasks-toast";
 import { loginWithCredentialsAction } from "../actions";
-import ForgotPasswordForm from "../forgot-password/components/forworgot";
 import { initialLoginState } from "../state";
 
 function LoginSubmitButton() {
@@ -25,7 +22,6 @@ function LoginSubmitButton() {
 
 export default function Login() {
   const router = useRouter();
-  const [openForgot, setOpenForgot] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loginState, loginAction] = useActionState(loginWithCredentialsAction, initialLoginState);
 
@@ -39,9 +35,8 @@ export default function Login() {
   }, [loginState.ok, loginState.redirect, loginState.tareasHoy, router]);
 
   return (
-    <>
-      <div className="space-y-3">
-        <form action={loginAction} className="space-y-3 rounded-2xl border border-border/70 bg-background/80 p-4 shadow-sm">
+    <div className="space-y-3">
+      <form action={loginAction} className="space-y-3 rounded-2xl border border-border/70 bg-background/80 p-4 shadow-sm">
           <div className="space-y-2">
             <label htmlFor="identifier" className="text-sm font-semibold">Usuario o correo</label>
             <div className="relative">
@@ -82,30 +77,7 @@ export default function Login() {
           ) : null}
 
           <LoginSubmitButton />
-        </form>
-
-        <Button className="w-full" variant="link" type="button" onClick={() => setOpenForgot(true)}>
-          ¿Olvidaste tu contraseña?
-        </Button>
-      </div>
-
-      <Dialog open={openForgot} onOpenChange={setOpenForgot}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Recuperar contraseña</DialogTitle>
-            <DialogDescription>Ingresa tu usuario para recibir instrucciones.</DialogDescription>
-          </DialogHeader>
-
-          <ForgotPasswordForm
-            onCancel={() => setOpenForgot(false)}
-            onSuccess={() => {
-              setOpenForgot(false);
-              toast.success("Te enviamos instrucciones para restablecer tu contraseña.");
-              router.push("/");
-            }}
-          />
-        </DialogContent>
-      </Dialog>
-    </>
+      </form>
+    </div>
   );
 }
