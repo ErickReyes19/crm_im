@@ -12,6 +12,7 @@ import Login from "./components/formLogin";
 
 export default async function LoginPage() {
   const session = await getSession();
+  if (session?.DebeCambiar) redirect("/reset-password");
   if (session) redirect("/dashboard");
 
   return (

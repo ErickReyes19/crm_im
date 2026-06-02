@@ -30,6 +30,19 @@ export interface UsuarioSesion extends JWTPayload {
   DebeCambiar: boolean;
 }
 
+function toBooleanFlag(value: unknown) {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "number") return value === 1;
+  if (typeof value === "bigint") return value === BigInt(1);
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "si";
+  }
+  if (Buffer.isBuffer(value)) return value[0] === 1;
+
+  return false;
+}
+
 // ------------------------------
 // JWT
 // ------------------------------
@@ -57,8 +70,7 @@ export const decrypt = async (
       FotoUrl: payload.FotoUrl as string | null,
       IdRol: payload.IdRol as string,
       Permiso: (payload.Permiso as string[]) || [],
-      DebeCambiar:
-        payload.DebeCambiar === true || payload.DebeCambiar === "True",
+      DebeCambiar: toBooleanFlag(payload.DebeCambiar),
       iss: payload.iss as string,
       aud: payload.aud as string,
     };
@@ -250,7 +262,7 @@ async function authenticateDB(username: string, password: string) {
       include: usuarioWithRolArgs.include,
     });
 
-    if (!user || !user.activo) return null;
+    if (!user || !toBooleanFlag(user.activo)) return null;
 
     const valid = await bcrypt.compare(password, user.contrasena);
 
@@ -276,7 +288,7 @@ async function authenticateDB(username: string, password: string) {
       FotoUrl: user.fotoUrl,
       IdRol: user.rol_id,
       Permiso: permisos,
-      DebeCambiar: user.DebeCambiarPassword ?? false,
+      DebeCambiar: toBooleanFlag(user.DebeCambiarPassword),
       iss: "your-issuer",
       aud: "your-audience",
     };
