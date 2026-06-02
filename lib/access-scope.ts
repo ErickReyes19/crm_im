@@ -1,18 +1,22 @@
 import { UsuarioSesion } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
+function normalizeRoleName(roleName?: string | null) {
+  return roleName?.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+export function isSuperAdminSession(session: UsuarioSesion): boolean {
+  return normalizeRoleName(session.Rol) === "super_admin" || session.Permiso?.includes("super_admin") === true || session.Permiso?.includes("ver_todos_usuarios") === true;
+}
+
 export async function getScopedUserIds(session: UsuarioSesion): Promise<string[]> {
-  if (session.Permiso?.includes("ver_todos_usuarios") || session.Permiso?.includes("super_admin")) {
+  if (isSuperAdminSession(session)) {
     const all = await prisma.usuarios.findMany({ select: { id: true } });
     return all.map((u) => u.id);
   }
 
   if (session.Permiso?.includes("gestionar_mi_equipo")) {
-    const team = await prisma.usuarios.findMany({
-      where: { OR: [{ id: session.IdUser }, { adminPadreId: session.IdUser }] },
-      select: { id: true },
-    });
-    return team.map((u) => u.id);
+    return getHierarchyUserIds(session.IdUser);
   }
 
   return [session.IdUser];
@@ -43,4 +47,18 @@ export async function getHierarchyUserIds(rootUserId: string): Promise<string[]>
 export async function canManageUser(session: UsuarioSesion, userId: string): Promise<boolean> {
   const ids = await getScopedUserIds(session);
   return ids.includes(userId);
+}
+
+export async function getScopedUsers(session: UsuarioSesion): Promise<Array<{ id: string; usuario: string; nombre: string | null; adminPadreId: string | null }>> {
+  const scopedUserIds = await getScopedUserIds(session);
+
+  return prisma.usuarios.findMany({
+    where: { id: { in: scopedUserIds }, activo: true },
+    select: { id: true, usuario: true, nombre: true, adminPadreId: true },
+    orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
+  });
+}
+
+export function getUserDisplayName(usuario: { usuario: string; nombre?: string | null }) {
+  return usuario.nombre?.trim() ? `${usuario.nombre} (${usuario.usuario})` : usuario.usuario;
 }

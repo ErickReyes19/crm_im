@@ -18,14 +18,9 @@ async function getScopedIdsForCurrentUser() {
   return { session, scopedUserIds };
 }
 
-function isSuperAdmin(session: Awaited<ReturnType<typeof getCurrentUser>>) {
-  return session.Permiso?.includes("super_admin");
-}
-
 async function getTareaScopeWhere(session: Awaited<ReturnType<typeof getCurrentUser>>): Promise<Prisma.TareaWhereInput> {
-  if (isSuperAdmin(session)) return {};
-
-  return { usuarioId: session.IdUser };
+  const scopedUserIds = await getScopedUserIds(session);
+  return { usuarioId: { in: scopedUserIds } };
 }
 
 export async function getClientesConNotasOpciones() {
