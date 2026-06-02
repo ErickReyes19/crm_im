@@ -102,12 +102,12 @@ export const columns: ColumnDef<VentaTableRow>[] = [
       return productos.length ? (
         <HoverCard>
           <HoverCardTrigger asChild>
-            <span className="inline-block max-w-[20rem] break-words line-clamp-2 cursor-help">{summary}</span>
+            <span className="inline-block max-w-[20rem] wrap-break-word line-clamp-2 cursor-help">{summary}</span>
           </HoverCardTrigger>
           <HoverCardContent>
             <div className="space-y-1 text-sm text-foreground">
               {productos.map((detalle, index) => (
-                <p key={index} className="whitespace-pre-wrap break-words">
+                <p key={index} className="whitespace-pre-wrap wrap-break-word">
                   {detalle.cantidad} x {detalle.producto?.nombre ?? "Producto"}
                 </p>
               ))}
@@ -124,6 +124,6 @@ export const columns: ColumnDef<VentaTableRow>[] = [
   {
     id: "actions",
     header: "Acciones",
-    cell: ({ row }) => <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Acciones</DropdownMenuLabel><Link href={`/ventas/${row.original.id}/edit`}><DropdownMenuItem>Editar</DropdownMenuItem></Link><CambiarEstadoActions venta={row.original} /></DropdownMenuContent></DropdownMenu>,
+    cell: ({ row }) => <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Acciones</DropdownMenuLabel><Link href={`/ventas/${row.original.id}`}><DropdownMenuItem>Ver venta</DropdownMenuItem></Link><Link href={`/ventas/${row.original.id}/edit`}><DropdownMenuItem>Editar</DropdownMenuItem></Link><CambiarEstadoActions venta={row.original} /></DropdownMenuContent></DropdownMenu>,
   },
 ];

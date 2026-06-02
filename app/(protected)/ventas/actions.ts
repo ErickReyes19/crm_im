@@ -36,7 +36,11 @@ export async function getVentaById(id: string) {
 
   return prisma.venta.findFirst({
     where: { id, ...ventaScopeWhere },
-    include: { productos: { include: { producto: { select: { id: true, nombre: true } } } } },
+    include: {
+      cliente: true,
+      usuario: { select: { id: true, usuario: true, nombre: true } },
+      productos: { include: { producto: { select: { id: true, nombre: true } } } },
+    },
   });
 }
 
