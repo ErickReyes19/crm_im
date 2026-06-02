@@ -1,14 +1,22 @@
 "use client";
-import { formatHondurasDate } from "@/lib/date-format";
-import { cambiarEstadoTarea } from "../actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatHondurasDate } from "@/lib/date-format";
 import { ColumnDef } from "@tanstack/react-table";
 import { AlertTriangle, ArrowUpDown, CheckCircle2, Clock3, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { cambiarEstadoTarea } from "../actions";
 
-export type TareaTableRow = { id: string; titulo: string; descripcion: string | null; estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA"; fechaObjetivo: Date; nota: { cliente: { nombre: string; apellido: string } } };
+export type TareaTableRow = {
+  id: string;
+  titulo: string;
+  descripcion: string | null;
+  estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA";
+  fechaObjetivo: Date;
+  nota: { cliente: { nombre: string; apellido: string } };
+  usuario: { id: string; usuario: string; nombre: string | null };
+};
 
 function getAlert(fechaObjetivo: Date) {
   const hoy = new Date();
@@ -19,8 +27,13 @@ function getAlert(fechaObjetivo: Date) {
   return { text: "Próxima", className: "text-green-600", Icon: CheckCircle2 };
 }
 
+function getUsuarioLabel(usuario: TareaTableRow["usuario"]) {
+  return usuario.nombre ? `${usuario.nombre} (${usuario.usuario})` : usuario.usuario;
+}
+
 export const columns: ColumnDef<TareaTableRow>[] = [
   { accessorKey: "titulo", header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Título <ArrowUpDown className="ml-2 h-4 w-4" /></Button> },
+  { id: "usuario", accessorFn: (t) => getUsuarioLabel(t.usuario), header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Usuario <ArrowUpDown className="ml-2 h-4 w-4" /></Button>, cell: ({ row }) => <div className="min-w-36"><p className="font-medium">{row.original.usuario.nombre ?? row.original.usuario.usuario}</p>{row.original.usuario.nombre && <p className="text-xs text-muted-foreground">{row.original.usuario.usuario}</p>}</div> },
   { id: "cliente", accessorFn: (t) => `${t.nota.cliente.nombre} ${t.nota.cliente.apellido}`, header: "Cliente", cell: ({ row }) => `${row.original.nota.cliente.nombre} ${row.original.nota.cliente.apellido}` },
   { accessorKey: "descripcion", header: "Descripción", cell: ({ row }) => <span className="line-clamp-2">{row.original.descripcion ?? "-"}</span> },
   { accessorKey: "estado", header: "Estado", cell: ({ row }) => <Badge variant="outline">{row.original.estado}</Badge> },

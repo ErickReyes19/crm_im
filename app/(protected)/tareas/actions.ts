@@ -1,6 +1,7 @@
 "use server";
 import { getSession } from "@/auth";
 import { getScopedUserIds } from "@/lib/access-scope";
+import { Prisma } from "@/lib/generated/prisma";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Tarea } from "./schema";
@@ -15,6 +16,16 @@ async function getScopedIdsForCurrentUser() {
   const session = await getCurrentUser();
   const scopedUserIds = await getScopedUserIds(session);
   return { session, scopedUserIds };
+}
+
+function isSuperAdmin(session: Awaited<ReturnType<typeof getCurrentUser>>) {
+  return session.Permiso?.includes("super_admin");
+}
+
+async function getTareaScopeWhere(session: Awaited<ReturnType<typeof getCurrentUser>>): Promise<Prisma.TareaWhereInput> {
+  if (isSuperAdmin(session)) return {};
+
+  return { usuarioId: session.IdUser };
 }
 
 export async function getClientesConNotasOpciones() {
@@ -51,17 +62,24 @@ export async function getNotasOpcionesByCliente(clienteId: string) {
 
 export async function getTareas() {
   const session = await getCurrentUser();
+  const tareaScopeWhere = await getTareaScopeWhere(session);
+
   return prisma.tarea.findMany({
-    where: { usuarioId: session.IdUser },
-    include: { nota: { include: { cliente: { select: { nombre: true, apellido: true } } } } },
-    orderBy: { fechaObjetivo: "asc" },
+    where: tareaScopeWhere,
+    include: {
+      nota: { include: { cliente: { select: { nombre: true, apellido: true } } } },
+      usuario: { select: { id: true, usuario: true, nombre: true } },
+    },
+    orderBy: [{ usuario: { usuario: "asc" } }, { fechaObjetivo: "asc" }],
   });
 }
 
 export async function getTareaById(id: string) {
   const session = await getCurrentUser();
+  const tareaScopeWhere = await getTareaScopeWhere(session);
+
   return prisma.tarea.findFirst({
-    where: { id, usuarioId: session.IdUser },
+    where: { id, ...tareaScopeWhere },
     include: { nota: { select: { clienteId: true } } },
   });
 }
@@ -86,7 +104,8 @@ export async function createTarea(data: Tarea) {
 export async function updateTarea(data: Tarea) {
   if (!data.id) throw new Error("ID requerido");
   const session = await getCurrentUser();
-  const tarea = await prisma.tarea.findFirst({ where: { id: data.id, usuarioId: session.IdUser }, select: { id: true } });
+  const tareaScopeWhere = await getTareaScopeWhere(session);
+  const tarea = await prisma.tarea.findFirst({ where: { id: data.id, ...tareaScopeWhere }, select: { id: true } });
   if (!tarea) throw new Error("Tarea no encontrada");
   await assertNotaInScope(data.notaId);
 
@@ -96,7 +115,8 @@ export async function updateTarea(data: Tarea) {
 
 export async function cambiarEstadoTarea(id: string, estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA") {
   const session = await getCurrentUser();
-  const tarea = await prisma.tarea.findFirst({ where: { id, usuarioId: session.IdUser }, select: { id: true } });
+  const tareaScopeWhere = await getTareaScopeWhere(session);
+  const tarea = await prisma.tarea.findFirst({ where: { id, ...tareaScopeWhere }, select: { id: true } });
   if (!tarea) throw new Error("Tarea no encontrada");
   await prisma.tarea.update({ where: { id }, data: { estado } });
   revalidatePath("/tareas");
