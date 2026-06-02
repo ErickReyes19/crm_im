@@ -123,6 +123,8 @@ export function Formulario({
                   <SelectContent>
                     <SelectItem value="NUEVO">Nuevo</SelectItem>
                     <SelectItem value="INTERESADO">Interesado</SelectItem>
+                    <SelectItem value="CLIENTE">Cliente</SelectItem>
+                    <SelectItem value="MAYORISTA">Mayorista</SelectItem>
                   </SelectContent>
                 </Select>
               </FieldContent>

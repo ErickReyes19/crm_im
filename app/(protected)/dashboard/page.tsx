@@ -1,4 +1,4 @@
-import { getSessionPermisos } from "@/auth";
+import { getSession } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, BarChart3, CalendarDays, FileText, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
-import { getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics, getDashboardUsuarios } from "./actions";
+import { DASHBOARD_ALL_USERS_VALUE, getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics, getDashboardUsuarios } from "./actions";
 
 type DashboardSearchParams = Promise<{ from?: string; to?: string; usuarioId?: string }>;
 
@@ -38,11 +38,14 @@ function EmptyState({ text }: { text: string }) {
 }
 
 export default async function DashboardPage({ searchParams }: { searchParams: DashboardSearchParams }) {
-  const permisos = await getSessionPermisos();
+  const session = await getSession();
+  const permisos = session?.Permiso ?? null;
   if (!permisos?.includes("ver_dashboard") && !permisos?.includes("ver_ventas")) return <NoAcceso />;
 
   const params = await searchParams;
   const puedeVerKpisUsuarios = permisos?.includes("acceso_kpi_usuarios");
+  const rol = session?.Rol?.toLowerCase();
+  const esSuperAdmin = rol === "super_admin" || rol === "super admin" || permisos?.includes("super_admin");
 
   const [metrics, currentMonth, currentWeek, usuarios] = await Promise.all([
     getDashboardMetrics({ from: params.from, to: params.to, usuarioId: params.usuarioId }),
@@ -79,6 +82,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
                 >
                   <option value="">Mi dashboard</option>
+                  {esSuperAdmin && <option value={DASHBOARD_ALL_USERS_VALUE}>Todos los dashboards</option>}
                   {usuarios.map((usuario) => (
                     <option key={usuario.id} value={usuario.id}>
                       {usuario.nombre?.trim() || usuario.usuario}

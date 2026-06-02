@@ -6,7 +6,7 @@ export const ClienteSchema = z.object({
   apellido: z.string().min(1, "El apellido es requerido"),
   ciudad: z.string().min(1, "La ciudad es requerida"),
   numero: z.string().min(1, "El número de contacto es requerido"),
-  etiqueta: z.enum(["NUEVO", "INTERESADO"]),
+  etiqueta: z.enum(["NUEVO", "INTERESADO", "CLIENTE", "MAYORISTA"]),
   usuarioAsignadoId: z.string().optional(),
   activo: z.boolean().default(true),
 });

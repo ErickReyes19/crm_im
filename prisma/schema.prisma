@@ -91,6 +91,8 @@ model PasswordResetToken {
 enum EtiquetaCliente {
   NUEVO
   INTERESADO
+  CLIENTE
+  MAYORISTA
 }
 
 enum EstadoVenta {

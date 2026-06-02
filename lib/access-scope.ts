@@ -18,6 +18,28 @@ export async function getScopedUserIds(session: UsuarioSesion): Promise<string[]
   return [session.IdUser];
 }
 
+export async function getHierarchyUserIds(rootUserId: string): Promise<string[]> {
+  const scopedIds = new Set<string>([rootUserId]);
+  let pendingIds = [rootUserId];
+
+  while (pendingIds.length > 0) {
+    const children = await prisma.usuarios.findMany({
+      where: { adminPadreId: { in: pendingIds } },
+      select: { id: true },
+    });
+
+    pendingIds = children
+      .map((user) => user.id)
+      .filter((id) => {
+        if (scopedIds.has(id)) return false;
+        scopedIds.add(id);
+        return true;
+      });
+  }
+
+  return [...scopedIds];
+}
+
 export async function canManageUser(session: UsuarioSesion, userId: string): Promise<boolean> {
   const ids = await getScopedUserIds(session);
   return ids.includes(userId);
