@@ -22,8 +22,8 @@ export function generateUserCreatedEmailHtml(
     <p style="margin-top: 20px;">Por favor, ingresa al sistema y cambia tu contraseña lo antes posible.</p>
       <p>
     Puedes acceder al sistema en el siguiente enlace:<br>
-    <a href="https://www.diariotiempo.hn/login" style="color: #4A90E2; font-weight: bold; text-decoration: none;">
-      https://www.diariotiempo.hn/login
+    <a href="https://www.diariotiempo.hn/" style="color: #4A90E2; font-weight: bold; text-decoration: none;">
+      https://www.diariotiempo.hn/
     </a>
   </p>
     <p>Saludos,<br><em>El equipo de soporte</em></p>

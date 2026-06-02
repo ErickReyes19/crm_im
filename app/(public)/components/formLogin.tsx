@@ -101,7 +101,7 @@ export default function Login() {
             onSuccess={() => {
               setOpenForgot(false);
               toast.success("Te enviamos instrucciones para restablecer tu contraseña.");
-              router.push("/login");
+              router.push("/");
             }}
           />
         </DialogContent>

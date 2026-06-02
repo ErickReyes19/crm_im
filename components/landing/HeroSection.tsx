@@ -46,7 +46,7 @@ export default function HeroSection() {
                 <ArrowRight className="w-5 h-5" />
               </Link> */}
               <Link
-                href="/login"
+                href="/"
                 className="px-8 py-4 border-2 border-rose-500 text-rose-500 rounded-full font-bold text-lg hover:bg-rose-50 transition-all duration-300"
               >
                 Acceder

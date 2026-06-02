@@ -21,7 +21,7 @@ export default function CTASection() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-fade-in-up">
           <Link
-            href="/login"
+            href="/"
             className="px-8 py-4 bg-white text-rose-600 rounded-full font-bold text-lg hover:shadow-2xl hover:scale-105 transition-all duration-300 flex items-center justify-center gap-2 btn-smooth"
           >
             Comprar Ahora
@@ -79,7 +79,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/login" className="hover:text-rose-400 transition-colors">
+                <Link href="/" className="hover:text-rose-400 transition-colors">
                   Iniciar Sesión
                 </Link>
               </li>

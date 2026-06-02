@@ -71,7 +71,7 @@ export default function Navbar() {
           {/* CTA Button */}
           <div className="flex items-center gap-4">
             <Link
-              href="/login"
+              href="/"
               className="hidden sm:inline-flex px-6 py-2.5 bg-linear-to-r from-rose-500 to-pink-500 text-white rounded-full font-semibold hover:shadow-lg hover:scale-105 transition-all duration-250 btn-smooth"
             >
               Iniciar Sesión
@@ -123,7 +123,7 @@ export default function Navbar() {
               Contacto
             </Link>
             <Link
-              href="/login"
+              href="/"
               className="block px-4 py-2 bg-linear-to-r from-rose-500 to-pink-500 text-white rounded-lg font-semibold text-center"
               onClick={() => setIsOpen(false)}
             >
