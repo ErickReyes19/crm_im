@@ -250,7 +250,7 @@ async function authenticateDB(username: string, password: string) {
       include: usuarioWithRolArgs.include,
     });
 
-    if (!user) return null;
+    if (!user || !user.activo) return null;
 
     const valid = await bcrypt.compare(password, user.contrasena);
 
