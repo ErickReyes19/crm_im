@@ -12,7 +12,7 @@ import Login from "./components/formLogin";
 
 export default async function LoginPage() {
   const session = await getSession();
-  if (session) redirect("/profile");
+  if (session) redirect("/dashboard");
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-background px-4 py-10">
