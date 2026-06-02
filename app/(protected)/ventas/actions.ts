@@ -23,7 +23,7 @@ export async function getVentas() {
     where: ventaScopeWhere,
     include: {
       cliente: true,
-      usuario: { select: { usuario: true } },
+      usuario: { select: { id: true, usuario: true, nombre: true } },
       productos: { include: { producto: { select: { id: true, nombre: true } } } },
     },
     orderBy: { createAt: "desc" },

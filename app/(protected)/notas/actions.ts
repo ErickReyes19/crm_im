@@ -18,7 +18,7 @@ export async function getNotas() {
 
   return prisma.nota.findMany({
     where: { cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
-    include: { cliente: { select: { id: true, nombre: true, apellido: true } }, usuario: { select: { id: true, usuario: true } }, evidencias: true },
+    include: { cliente: { select: { id: true, nombre: true, apellido: true } }, usuario: { select: { id: true, usuario: true, nombre: true } }, evidencias: true },
     orderBy: { createAt: "desc" },
   });
 }
