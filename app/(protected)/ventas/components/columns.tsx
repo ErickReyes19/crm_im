@@ -3,6 +3,7 @@
 import { cambiarEstadoVenta } from "@/app/(protected)/ventas/actions";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, Loader2, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
@@ -91,7 +92,31 @@ export const columns: ColumnDef<VentaTableRow>[] = [
   {
     id: "productosResumen",
     header: "Productos",
-    cell: ({ row }) => row.original.productos?.length ? row.original.productos.map((detalle) => `${detalle.cantidad} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ") : "Sin productos",
+    cell: ({ row }) => {
+      const productos = row.original.productos ?? [];
+      const summary = productos.length
+        ? productos.map((detalle) => `${detalle.cantidad} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ")
+        : "Sin productos";
+
+      return productos.length ? (
+        <HoverCard>
+          <HoverCardTrigger asChild>
+            <span className="inline-block max-w-[20rem] break-words line-clamp-2 cursor-help">{summary}</span>
+          </HoverCardTrigger>
+          <HoverCardContent>
+            <div className="space-y-1 text-sm text-foreground">
+              {productos.map((detalle, index) => (
+                <p key={index} className="whitespace-pre-wrap break-words">
+                  {detalle.cantidad} x {detalle.producto?.nombre ?? "Producto"}
+                </p>
+              ))}
+            </div>
+          </HoverCardContent>
+        </HoverCard>
+      ) : (
+        <span className="text-muted-foreground">Sin productos</span>
+      );
+    },
   },
   { accessorKey: "estado", header: "Estado" },
   { id: "metodoPago", header: "Pago", cell: ({ row }) => row.original.metodoPago === "TRANSFERENCIA" ? "Transferencia" : "Efectivo" },

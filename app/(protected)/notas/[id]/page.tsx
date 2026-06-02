@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { getSessionPermisos } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
