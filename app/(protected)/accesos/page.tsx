@@ -1,16 +1,18 @@
-import { getSessionPermisos } from "@/auth";
+import { getSession } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { isSuperAdminSession } from "@/lib/access-scope";
 import { formatHondurasDateTime } from "@/lib/date-format";
 import { Activity } from "lucide-react";
 import { getAccesosUsuarios } from "./actions";
 
 export default async function AccesosPage() {
-  const permisos = await getSessionPermisos();
-  if (!permisos?.includes("ver_online")) return <NoAcceso />;
+  const session = await getSession();
+  const permisos = session?.Permiso;
+  if (!session || (!permisos?.includes("ver_online") && !isSuperAdminSession(session))) return <NoAcceso />;
 
   const usuarios = await getAccesosUsuarios();
   const totalOnline = usuarios.filter((usuario) => usuario.estaOnline).length;

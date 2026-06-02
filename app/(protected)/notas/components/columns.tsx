@@ -13,12 +13,13 @@ export type NotaTableRow = {
   createAt: Date;
   evidencias: { id: string }[];
   cliente: { nombre: string; apellido: string };
-  usuario: { usuario: string };
+  usuario: { usuario: string; nombre: string | null };
+  usuarioFiltro: string;
 };
 
 export const columns: ColumnDef<NotaTableRow>[] = [
   { id: "cliente", accessorFn: (n) => `${n.cliente.nombre} ${n.cliente.apellido}`, header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Cliente <ArrowUpDown className="ml-2 h-4 w-4" /></Button> },
-  { id: "usuario", accessorFn: (n) => n.usuario.usuario, header: "Usuario" },
+  { id: "usuario", accessorFn: (n) => n.usuarioFiltro, header: "Usuario" },
   { accessorKey: "contenido", header: "Nota", cell: ({ row }) => <span className="line-clamp-2">{row.original.contenido}</span> },
   { id: "evidencias", accessorFn: (n) => n.evidencias.length, header: "Evidencias", cell: ({ row }) => row.original.evidencias.length },
   { id: "fecha", accessorFn: (n) => n.createAt, header: "Fecha", cell: ({ row }) => formatHondurasDateTime(row.original.createAt) },

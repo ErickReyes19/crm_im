@@ -17,6 +17,7 @@ export type TareaTableRow = {
   fechaObjetivo: Date;
   nota: { cliente: { nombre: string; apellido: string } };
   usuario: { id: string; usuario: string; nombre: string | null };
+  usuarioFiltro: string;
 };
 
 function getAlert(fechaObjetivo: Date) {

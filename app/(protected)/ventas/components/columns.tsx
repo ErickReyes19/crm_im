@@ -27,7 +27,8 @@ export type VentaTableRow = {
   metodoPago?: "EFECTIVO" | "TRANSFERENCIA";
   canEditEstado?: boolean;
   cliente?: { nombre: string; apellido: string } | null;
-  usuario?: { usuario: string } | null;
+  usuario?: { id: string; usuario: string; nombre: string | null } | null;
+  usuarioFiltro: string;
   productos?: Array<{ cantidad: number; subtotal: number; producto?: { nombre: string } | null }>;
 };
 
@@ -80,9 +81,9 @@ export const columns: ColumnDef<VentaTableRow>[] = [
   },
   {
     id: "usuario",
-    accessorFn: (venta) => venta.usuario?.usuario ?? "",
+    accessorFn: (venta) => venta.usuarioFiltro,
     header: "Vendedor",
-    cell: ({ row }) => row.original.usuario?.usuario ?? "Usuario actual",
+    cell: ({ row }) => row.original.usuarioFiltro || "Usuario actual",
   },
   {
     accessorKey: "total",

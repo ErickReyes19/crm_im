@@ -1,7 +1,7 @@
 "use server";
 
 import { getSession } from "@/auth";
-import { getHierarchyUserIds } from "@/lib/access-scope";
+import { getScopedUserIds, isSuperAdminSession } from "@/lib/access-scope";
 import { prisma } from "@/lib/prisma";
 
 const ONLINE_WINDOW_HOURS = 6;
@@ -19,12 +19,12 @@ export type AccesoUsuario = {
 
 export async function getAccesosUsuarios(): Promise<AccesoUsuario[]> {
   const session = await getSession();
-  if (!session?.Permiso?.includes("ver_online")) throw new Error("No tienes permiso para ver accesos");
+  if (!session || (!session.Permiso?.includes("ver_online") && !isSuperAdminSession(session))) throw new Error("No tienes permiso para ver accesos");
 
   const onlineSince = new Date(Date.now() - ONLINE_WINDOW_HOURS * 60 * 60 * 1000);
-  const hierarchyUserIds = await getHierarchyUserIds(session.IdUser);
+  const scopedUserIds = await getScopedUserIds(session);
   const usuarios = await prisma.usuarios.findMany({
-    where: { id: { in: hierarchyUserIds } },
+    where: { id: { in: scopedUserIds } },
     select: {
       id: true,
       usuario: true,
