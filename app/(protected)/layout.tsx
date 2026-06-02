@@ -11,6 +11,10 @@ export default async function Layout({ children }: { children: React.ReactNode }
     redirect("/");
   }
 
+  if (sesion.DebeCambiar) {
+    redirect("/reset-password");
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />

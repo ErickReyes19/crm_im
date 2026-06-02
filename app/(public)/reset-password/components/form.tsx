@@ -35,7 +35,7 @@ export default function ResetPassword({ username }: { username: string }) {
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <Controller
         name="nueva"
         control={form.control}
@@ -44,11 +44,18 @@ export default function ResetPassword({ username }: { username: string }) {
             <FieldLabel>Nueva contraseña</FieldLabel>
             <FieldContent>
               <div className="relative">
-                <Input {...field} type={showNew ? "text" : "password"} placeholder="••••••••" disabled={isPending} className="pr-10" />
+                <Input
+                  {...field}
+                  type={showNew ? "text" : "password"}
+                  placeholder="••••••••"
+                  disabled={isPending}
+                  className="h-10 rounded-xl border-border/70 bg-background/90 pr-10 focus-visible:ring-2 focus-visible:ring-accent/60"
+                />
                 <button
                   type="button"
                   onClick={() => setShowNew(!showNew)}
-                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                  className="absolute inset-y-0 right-3 flex items-center rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={showNew ? "Ocultar contraseña" : "Mostrar contraseña"}
                 >
                   {showNew ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -68,11 +75,18 @@ export default function ResetPassword({ username }: { username: string }) {
             <FieldLabel>Confirmar contraseña</FieldLabel>
             <FieldContent>
               <div className="relative">
-                <Input {...field} type={showConfirm ? "text" : "password"} placeholder="••••••••" disabled={isPending} className="pr-10" />
+                <Input
+                  {...field}
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="••••••••"
+                  disabled={isPending}
+                  className="h-10 rounded-xl border-border/70 bg-background/90 pr-10 focus-visible:ring-2 focus-visible:ring-accent/60"
+                />
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
+                  className="absolute inset-y-0 right-3 flex items-center rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
+                  aria-label={showConfirm ? "Ocultar confirmación" : "Mostrar confirmación"}
                 >
                   {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -84,7 +98,7 @@ export default function ResetPassword({ username }: { username: string }) {
         )}
       />
 
-      <Button type="submit" disabled={isPending} className="w-full bg-cyan-600 hover:bg-cyan-700">
+      <Button type="submit" disabled={isPending} className="h-10 w-full rounded-xl font-bold shadow-md shadow-foreground/10">
         {isPending ? "Guardando..." : "Actualizar contraseña"}
       </Button>
     </form>
