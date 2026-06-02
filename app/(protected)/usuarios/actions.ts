@@ -56,7 +56,7 @@ export async function createUsuario(data: Usuario): Promise<Usuario> {
     adminPadreId = session.IdUser;
   }
 
-  const newUser = await prisma.usuarios.create({ data: { id: randomUUID(), usuario: data.usuario, rol_id: data.rol_id, email: data.email, contrasena: hashed, activo: true, DebeCambiarPassword: false, adminPadreId } });
+  const newUser = await prisma.usuarios.create({ data: { id: randomUUID(), usuario: data.usuario, rol_id: data.rol_id, email: data.email, contrasena: hashed, activo: true, DebeCambiarPassword: true, adminPadreId } });
   revalidatePath("/usuarios");
   return { id: newUser.id, usuario: newUser.usuario, rol: "", email: newUser.email, nombre: newUser.nombre ?? "", fotoUrl: newUser.fotoUrl ?? "", telefono: newUser.telefono ?? "", ciudad: newUser.ciudad ?? "", direccion: newUser.direccion ?? "", rol_id: newUser.rol_id, activo: newUser.activo };
 }
@@ -73,14 +73,16 @@ export async function updateUsuario(data: Usuario): Promise<Usuario> {
   return { id: updated.id, usuario: updated.usuario, rol: "", rol_id: updated.rol_id, email: updated.email, nombre: updated.nombre ?? "", fotoUrl: updated.fotoUrl ?? "", telefono: updated.telefono ?? "", ciudad: updated.ciudad ?? "", direccion: updated.direccion ?? "", activo: updated.activo };
 }
 
-export async function resetUsuarioPassword(userId: string): Promise<{ password: string }> {
+export async function resetUsuarioPassword(userId: string, manualPassword?: string): Promise<{ password: string }> {
   const session = await requireSession();
   if (!session.Permiso?.includes("editar_usuario")) throw new Error("No autorizado");
 
   const scopedIds = await getScopedUserIds(session);
   if (!scopedIds.includes(userId)) throw new Error("No autorizado");
 
-  const password = generateTemporaryPassword();
+  const password = manualPassword?.trim() || generateTemporaryPassword();
+  if (password.length < 6) throw new Error("La contraseña debe tener al menos 6 caracteres");
+
   const hashed = await bcrypt.hash(password, 10);
 
   await prisma.usuarios.update({

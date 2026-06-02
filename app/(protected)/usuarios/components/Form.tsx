@@ -75,6 +75,7 @@ export function Formulario({
 }) {
   const router = useRouter();
   const [temporaryPassword, setTemporaryPassword] = useState("");
+  const [manualPassword, setManualPassword] = useState("");
   const [isResettingPassword, setIsResettingPassword] = useState(false);
 
   const form = useForm<z.infer<typeof UsuarioSchema>>({
@@ -108,13 +109,14 @@ export function Formulario({
     }
   }
 
-  async function onResetPassword() {
+  async function onResetPassword(password?: string) {
     if (!initialData?.id) return;
 
     try {
       setIsResettingPassword(true);
-      const result = await resetUsuarioPassword(initialData.id);
+      const result = await resetUsuarioPassword(initialData.id, password);
       setTemporaryPassword(result.password);
+      setManualPassword(result.password);
       const copied = await copyTextToClipboard(result.password);
       toast.success(copied ? "Contraseña restablecida y copiada al portapapeles." : "Contraseña restablecida. Cópiala manualmente desde el campo.");
     } catch (error) {
@@ -238,8 +240,16 @@ export function Formulario({
         <Field>
           <FieldLabel>Restablecer contraseña</FieldLabel>
           <FieldContent className="space-y-3">
+            <Input
+              value={manualPassword}
+              onChange={(event) => setManualPassword(event.target.value)}
+              placeholder="Escribe una contraseña manual o genera una aleatoria"
+              type="text"
+              className="font-mono"
+              aria-label="Nueva contraseña temporal"
+            />
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button type="button" variant="outline" onClick={onResetPassword} disabled={isResettingPassword}>
+              <Button type="button" variant="outline" onClick={() => onResetPassword()} disabled={isResettingPassword}>
                 {isResettingPassword ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -248,9 +258,17 @@ export function Formulario({
                 ) : (
                   <>
                     <RefreshCcw className="mr-2 h-4 w-4" />
-                    Generar contraseña temporal
+                    Generar y aplicar aleatoria
                   </>
                 )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onResetPassword(manualPassword)}
+                disabled={isResettingPassword || !manualPassword.trim()}
+              >
+                Aplicar contraseña manual
               </Button>
               <Button
                 type="button"
@@ -265,12 +283,9 @@ export function Formulario({
                 Copiar
               </Button>
             </div>
-            {temporaryPassword && (
-              <Input readOnly value={temporaryPassword} className="font-mono" aria-label="Contraseña temporal generada" />
-            )}
           </FieldContent>
           <FieldDescription>
-            Genera una contraseña aleatoria. El usuario deberá cambiarla al iniciar sesión en /reset-password.
+            Genera una contraseña aleatoria o escribe una manual. Al aplicarla, el usuario deberá cambiarla al iniciar sesión en /reset-password.
           </FieldDescription>
         </Field>
       )}
