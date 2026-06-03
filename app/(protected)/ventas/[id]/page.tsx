@@ -50,6 +50,19 @@ export default async function VentaDetailPage({ params }: { params: Promise<{ id
           <p className="flex items-center gap-2"><DollarSign className="h-4 w-4" />Total: <span className="font-medium text-foreground">{Number(venta.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
         </div>
 
+
+        {venta.metodoPago === "TRANSFERENCIA" && (
+          <div className="mb-4 rounded-2xl border bg-background p-4">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">Evidencia de transferencia</p>
+            {venta.evidenciaTransferenciaB64 ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={venta.evidenciaTransferenciaB64} alt="Evidencia de transferencia" className="max-h-[520px] w-full rounded-xl border object-contain" />
+            ) : (
+              <p className="text-sm text-muted-foreground">Esta venta por transferencia no tiene imagen de evidencia registrada.</p>
+            )}
+          </div>
+        )}
+
         <div className="overflow-hidden rounded-2xl border bg-background">
           <div className="bg-muted px-4 py-3 text-sm font-medium text-muted-foreground">Productos</div>
           <div className="divide-y border-t">

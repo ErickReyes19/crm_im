@@ -13,6 +13,7 @@ export default async function ClientesPage() {
   if (!permisos?.includes("ver_clientes")) return <NoAcceso />;
 
   const data = await getClientes();
+  const canViewClientsByUser = permisos.includes("ver_todos_clientes") || permisos.includes("gestionar_mi_equipo") || permisos.includes("super_admin");
 
   return (
     <div className="container mx-auto py-2">
@@ -24,8 +25,8 @@ export default async function ClientesPage() {
           </Button>
         </div>
       )}
-      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={permisos.includes("ver_todos_clientes")} /></div>
-      <div className="block md:hidden"><ClientesListMobile clientes={data} canEdit={permisos.includes("editar_cliente")} /></div>
+      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={canViewClientsByUser} /></div>
+      <div className="block md:hidden"><ClientesListMobile clientes={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={canViewClientsByUser} /></div>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use server";
 import { getSession } from "@/auth";
 import { getScopedUserIds } from "@/lib/access-scope";
+import { resolveListDateRange, type ListDateRangeInput } from "@/lib/list-date-range";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma";
 import { revalidatePath } from "next/cache";
@@ -15,16 +16,17 @@ function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" |
 }
 
 
-export async function getVentas() {
+export async function getVentas(range?: ListDateRangeInput) {
   const session = await getCurrentUser();
   const ventaScopeWhere = await getVentaScopeWhere(session);
+  const dateRange = resolveListDateRange(range);
 
   return prisma.venta.findMany({
-    where: ventaScopeWhere,
+    where: { ...ventaScopeWhere, createAt: { gte: dateRange.from, lt: dateRange.toExclusive } },
     include: {
       cliente: true,
       usuario: { select: { id: true, usuario: true, nombre: true } },
-      productos: { include: { producto: { select: { id: true, nombre: true } } } },
+      productos: { include: { producto: { select: { id: true, nombre: true, descripcion: true } } } },
     },
     orderBy: { createAt: "desc" },
   });
@@ -39,7 +41,7 @@ export async function getVentaById(id: string) {
     include: {
       cliente: true,
       usuario: { select: { id: true, usuario: true, nombre: true } },
-      productos: { include: { producto: { select: { id: true, nombre: true } } } },
+      productos: { include: { producto: { select: { id: true, nombre: true, descripcion: true } } } },
     },
   });
 }

@@ -2,6 +2,7 @@
 import { getSession } from "@/auth";
 import { getScopedUserIds } from "@/lib/access-scope";
 import { Prisma } from "@/lib/generated/prisma";
+import { resolveListDateRange, type ListDateRangeInput } from "@/lib/list-date-range";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Tarea } from "./schema";
@@ -55,12 +56,13 @@ export async function getNotasOpcionesByCliente(clienteId: string) {
   });
 }
 
-export async function getTareas() {
+export async function getTareas(range?: ListDateRangeInput) {
   const session = await getCurrentUser();
   const tareaScopeWhere = await getTareaScopeWhere(session);
+  const dateRange = resolveListDateRange(range);
 
   return prisma.tarea.findMany({
-    where: tareaScopeWhere,
+    where: { ...tareaScopeWhere, fechaObjetivo: { gte: dateRange.from, lt: dateRange.toExclusive } },
     include: {
       nota: { include: { cliente: { select: { nombre: true, apellido: true } } } },
       usuario: { select: { id: true, usuario: true, nombre: true } },
