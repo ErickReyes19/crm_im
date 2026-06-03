@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -60,6 +61,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaB64" });
   const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
   const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
+  const [productoSearch, setProductoSearch] = useState<Record<string, string>>({});
 
   useEffect(() => {
     form.setValue("total", Number(totalCalculado.toFixed(2)), { shouldValidate: true });
@@ -176,13 +178,52 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
             const subtotal = precioAjustado * (Number.isFinite(cantidad) ? cantidad : 0);
 
             return <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(220px,1fr)_120px_140px_170px_160px_auto] md:items-start">
-              <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Producto</FieldLabel>
-                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre} - {producto.descripcion}</SelectItem>)}</SelectContent></Select></FieldContent>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )} />
+              <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => {
+                const query = productoSearch[item.id] ?? "";
+                const filteredProducts = productos.filter((producto) =>
+                  `${producto.nombre} ${producto.descripcion}`.toLowerCase().includes(query.toLowerCase())
+                );
+
+                return (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel>Producto</FieldLabel>
+                    <FieldContent>
+                      <Combobox
+                        value={field.value ?? ""}
+                        onValueChange={(value) => {
+                          field.onChange(value ?? "");
+                          setProductoSearch((prev) => ({ ...prev, [item.id]: "" }));
+                        }}
+                        itemToStringLabel={(value) => productos.find((producto) => producto.id === value)?.nombre ?? value}
+                        itemToStringValue={(value) => value}
+                        autoHighlight
+                        autoComplete="list"
+                        onInputValueChange={(value) => setProductoSearch((prev) => ({ ...prev, [item.id]: value ?? "" }))}
+                      >
+                        <ComboboxInput
+                          placeholder="Buscar producto"
+                          showClear
+                          showTrigger
+                          disabled={productos.length === 0}
+                        />
+                        <ComboboxContent>
+                          <ComboboxList>
+                            {filteredProducts.map((producto) => (
+                              <ComboboxItem key={producto.id} value={producto.id}>
+                                {producto.nombre} - {producto.descripcion}
+                              </ComboboxItem>
+                            ))}
+                          </ComboboxList>
+                          {filteredProducts.length === 0 && (
+                            <ComboboxEmpty>No se encontró ningún producto.</ComboboxEmpty>
+                          )}
+                        </ComboboxContent>
+                      </Combobox>
+                    </FieldContent>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                  </Field>
+                );
+              }} />
 
               <Controller name={`productos.${index}.cantidad`} control={form.control} render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
