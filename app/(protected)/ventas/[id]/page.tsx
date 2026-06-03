@@ -72,7 +72,7 @@ export default async function VentaDetailPage({ params }: { params: Promise<{ id
               venta.productos.map((detalle) => (
                 <div key={`${detalle.productoId}-${detalle.cantidad}`} className="flex flex-col gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="font-medium text-foreground">{detalle.producto?.nombre ?? "Producto"}</p>
+                    <p className="font-medium text-foreground">{detalle.producto ? `${detalle.producto.nombre} - ${detalle.producto.descripcion}` : "Producto"}</p>
                     <p className="text-sm text-muted-foreground">Cantidad: {detalle.cantidad}</p>
                   </div>
                   <div className="grid gap-1 text-sm text-muted-foreground sm:text-right">

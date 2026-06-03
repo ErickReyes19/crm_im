@@ -179,6 +179,8 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
             return <div key={item.id} className="grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(220px,1fr)_120px_140px_170px_160px_auto] md:items-start">
               <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => {
+                const selectedProduct = productos.find((producto) => producto.id === field.value);
+                const selectedLabel = selectedProduct ? `${selectedProduct.nombre} - ${selectedProduct.descripcion}` : "";
                 const query = productoSearch[item.id] ?? "";
                 const filteredProducts = productos.filter((producto) =>
                   `${producto.nombre} ${producto.descripcion}`.toLowerCase().includes(query.toLowerCase())
@@ -190,11 +192,15 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
                     <FieldContent>
                       <Combobox
                         value={field.value ?? ""}
+                        inputValue={query || selectedLabel}
                         onValueChange={(value) => {
                           field.onChange(value ?? "");
                           setProductoSearch((prev) => ({ ...prev, [item.id]: "" }));
                         }}
-                        itemToStringLabel={(value) => productos.find((producto) => producto.id === value)?.nombre ?? value}
+                        itemToStringLabel={(value) => {
+                          const producto = productos.find((producto) => producto.id === value);
+                          return producto ? `${producto.nombre} - ${producto.descripcion}` : value;
+                        }}
                         itemToStringValue={(value) => value}
                         autoHighlight
                         autoComplete="list"
