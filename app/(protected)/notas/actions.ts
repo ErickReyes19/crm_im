@@ -2,6 +2,7 @@
 
 import { getSession } from "@/auth";
 import { getScopedUserIds } from "@/lib/access-scope";
+import { resolveListDateRange, type ListDateRangeInput } from "@/lib/list-date-range";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { Nota } from "./schema";
@@ -12,12 +13,13 @@ async function getCurrentUser() {
   return session;
 }
 
-export async function getNotas() {
+export async function getNotas(range?: ListDateRangeInput) {
   const session = await getCurrentUser();
   const scopedUserIds = await getScopedUserIds(session);
+  const dateRange = resolveListDateRange(range);
 
   return prisma.nota.findMany({
-    where: { cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
+    where: { cliente: { usuarioAsignadoId: { in: scopedUserIds } }, createAt: { gte: dateRange.from, lt: dateRange.toExclusive } },
     include: { cliente: { select: { id: true, nombre: true, apellido: true } }, usuario: { select: { id: true, usuario: true, nombre: true } }, evidencias: true },
     orderBy: { createAt: "desc" },
   });

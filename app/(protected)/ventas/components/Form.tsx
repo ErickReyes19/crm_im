@@ -16,7 +16,7 @@ import { TipoPrecioVenta, VentaFormValues, VentaSchema } from "../schema";
 
 type VentaFormOutput = z.output<typeof VentaSchema>;
 type ClienteOpcion = { id: string; nombre: string; apellido: string };
-type ProductoOpcion = { id: string; nombre: string };
+type ProductoOpcion = { id: string; nombre: string; descripcion: string };
 
 const descuentos: Array<{ value: TipoPrecioVenta; label: string }> = [
   { value: "NORMAL", label: "Normal" },
@@ -179,7 +179,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
               <Controller name={`productos.${index}.productoId`} control={form.control} render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel>Producto</FieldLabel>
-                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre}</SelectItem>)}</SelectContent></Select></FieldContent>
+                  <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue placeholder="Selecciona producto" /></SelectTrigger><SelectContent>{productos.map((producto) => <SelectItem key={producto.id} value={producto.id}>{producto.nombre} - {producto.descripcion}</SelectItem>)}</SelectContent></Select></FieldContent>
                   {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                 </Field>
               )} />

@@ -24,7 +24,7 @@ export async function getProductoById(id?: string) {
 export async function getProductosOpciones() {
   return prisma.producto.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true },
+    select: { id: true, nombre: true, descripcion: true },
     orderBy: { nombre: "asc" },
   });
 }
