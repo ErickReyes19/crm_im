@@ -63,6 +63,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaB64" });
   const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
   const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [productoSearch, setProductoSearch] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -70,6 +71,9 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   }, [totalCalculado, form]);
 
   async function onSubmit(data: VentaFormOutput) {
+    if (isSaving) return;
+
+    setIsSaving(true);
     try {
       const payload = { ...data, total: Number(totalCalculado.toFixed(2)) };
       if (isUpdate) {
@@ -82,6 +86,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
       router.push("/ventas");
       router.refresh();
     } catch (error) {
+      setIsSaving(false);
       toast.error(error instanceof Error ? error.message : "Error al guardar.");
     }
   }
@@ -270,7 +275,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
       <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={() => router.push("/ventas")}>Cancelar</Button>
-        <Button type="submit" disabled={form.formState.isSubmitting || cargandoEvidencia || clientes.length === 0 || productos.length === 0}>{form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
+        <Button type="submit" disabled={isSaving || form.formState.isSubmitting || cargandoEvidencia || clientes.length === 0 || productos.length === 0}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
       </div>
     </form>
   );
