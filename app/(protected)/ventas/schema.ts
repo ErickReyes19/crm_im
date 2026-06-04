@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const TipoPrecioVentaSchema = z.enum(["NORMAL", "DESCUENTO_10", "DESCUENTO_20", "DESCUENTO_30"]);
+export const TipoPrecioVentaSchema = z.enum(["NORMAL", "DESCUENTO_10", "DESCUENTO_20", "DESCUENTO_30", "DESCUENTO_15"]);
 export const MetodoPagoVentaSchema = z.enum(["EFECTIVO", "TRANSFERENCIA"]);
 
 export const VentaProductoSchema = z.object({
