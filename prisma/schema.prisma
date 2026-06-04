@@ -110,6 +110,7 @@ enum EstadoTarea {
 enum TipoPrecioVenta {
   NORMAL
   DESCUENTO_10
+  DESCUENTO_15
   DESCUENTO_20
   DESCUENTO_30
 }

@@ -8,8 +8,9 @@ import { revalidatePath } from "next/cache";
 import { Venta } from "./schema";
 
 
-function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_20" | "DESCUENTO_30") {
+function aplicarDescuento(precioUnitario: Prisma.Decimal, tipoPrecio: "NORMAL" | "DESCUENTO_10" | "DESCUENTO_15" | "DESCUENTO_20" | "DESCUENTO_30") {
   if (tipoPrecio === "DESCUENTO_10") return precioUnitario.mul(new Prisma.Decimal(0.9));
+  if (tipoPrecio === "DESCUENTO_15") return precioUnitario.mul(new Prisma.Decimal(0.85));
   if (tipoPrecio === "DESCUENTO_20") return precioUnitario.mul(new Prisma.Decimal(0.8));
   if (tipoPrecio === "DESCUENTO_30") return precioUnitario.mul(new Prisma.Decimal(0.7));
   return precioUnitario;
