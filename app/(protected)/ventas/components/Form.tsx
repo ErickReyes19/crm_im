@@ -22,12 +22,14 @@ type ProductoOpcion = { id: string; nombre: string; descripcion: string };
 const descuentos: Array<{ value: TipoPrecioVenta; label: string }> = [
   { value: "NORMAL", label: "Normal" },
   { value: "DESCUENTO_10", label: "Descuento 10%" },
+  { value: "DESCUENTO_15", label: "Descuento 15%" },
   { value: "DESCUENTO_20", label: "Descuento 20%" },
   { value: "DESCUENTO_30", label: "Descuento 30%" },
 ];
 
 function getPrecioConDescuento(precioUnitario: number, tipoPrecio: TipoPrecioVenta) {
   if (tipoPrecio === "DESCUENTO_10") return precioUnitario * 0.9;
+  if (tipoPrecio === "DESCUENTO_15") return precioUnitario * 0.85;
   if (tipoPrecio === "DESCUENTO_20") return precioUnitario * 0.8;
   if (tipoPrecio === "DESCUENTO_30") return precioUnitario * 0.7;
   return precioUnitario;
