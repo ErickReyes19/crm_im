@@ -13,7 +13,7 @@ export default async function CreateNotaPage({ searchParams }: { searchParams: P
   const { clienteId } = await searchParams;
 
   return <div className="container mx-auto py-2 space-y-4">
-    <HeaderComponent Icon={PlusCircle} description="Agrega una nota al cliente con evidencia base64" screenName="Crear nota" />
+    <HeaderComponent Icon={PlusCircle} description="Agrega una nota al cliente con evidencia en S3" screenName="Crear nota" />
     <Formulario clientes={clientes} initialData={{ clienteId }} />
   </div>;
 }

@@ -54,9 +54,9 @@ export default async function VentaDetailPage({ params }: { params: Promise<{ id
         {venta.metodoPago === "TRANSFERENCIA" && (
           <div className="mb-4 rounded-2xl border bg-background p-4">
             <p className="mb-3 text-sm font-medium text-muted-foreground">Evidencia de transferencia</p>
-            {venta.evidenciaTransferenciaB64 ? (
+            {venta.evidenciaTransferenciaUbicacion ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={venta.evidenciaTransferenciaB64} alt="Evidencia de transferencia" className="max-h-[520px] w-full rounded-xl border object-contain" />
+              <img src={`/api/media/${venta.evidenciaTransferenciaUbicacion}`} alt="Evidencia de transferencia" className="max-h-[520px] w-full rounded-xl border object-contain" />
             ) : (
               <p className="text-sm text-muted-foreground">Esta venta por transferencia no tiene imagen de evidencia registrada.</p>
             )}

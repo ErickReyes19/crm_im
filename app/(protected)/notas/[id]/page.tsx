@@ -54,8 +54,8 @@ export default async function NotaDetailPage({ params }: { params: Promise<{ id:
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {nota.evidencias.map((evidencia, index) => (
-              <a key={evidencia.id} href={evidencia.imagenB64} target="_blank" rel="noreferrer" className="group block overflow-hidden rounded-xl border">
-                <img src={evidencia.imagenB64} alt={`Evidencia ${index + 1}`} className="h-48 w-full object-cover transition group-hover:scale-[1.02]" />
+              <a key={evidencia.id} href={`/api/media/${evidencia.ubicacion}`} target="_blank" rel="noreferrer" className="group block overflow-hidden rounded-xl border">
+                <img src={`/api/media/${evidencia.ubicacion}`} alt={evidencia.nombre || `Evidencia ${index + 1}`} className="h-48 w-full object-cover transition group-hover:scale-[1.02]" />
               </a>
             ))}
           </div>

@@ -45,7 +45,7 @@ export async function createNota(data: Nota) {
   const cliente = await prisma.cliente.findFirst({ where: { id: data.clienteId, usuarioAsignadoId: { in: scopedUserIds } }, select: { id: true } });
   if (!cliente) throw new Error("No tienes acceso al cliente seleccionado");
 
-  const nota = await prisma.nota.create({ data: { clienteId: data.clienteId, usuarioId: session.IdUser, contenido: data.contenido, evidencias: { create: (data.evidencias ?? []).map((imagenB64) => ({ imagenB64 })) } } });
+  const nota = await prisma.nota.create({ data: { clienteId: data.clienteId, usuarioId: session.IdUser, contenido: data.contenido, evidencias: { create: (data.evidencias ?? []).map((evidencia) => ({ ubicacion: evidencia.ubicacion, nombre: evidencia.nombre })) } } });
   revalidatePath("/notas");
   return nota;
 }
@@ -56,6 +56,6 @@ export async function updateNota(data: Nota) {
   const nota = await getNotaById(data.id);
   if (!nota) throw new Error("Nota no encontrada o sin acceso");
 
-  await prisma.nota.update({ where: { id: data.id }, data: { contenido: data.contenido, evidencias: { deleteMany: {}, create: (data.evidencias ?? []).map((imagenB64) => ({ imagenB64 })) } } });
+  await prisma.nota.update({ where: { id: data.id }, data: { contenido: data.contenido, evidencias: { deleteMany: {}, create: (data.evidencias ?? []).map((evidencia) => ({ ubicacion: evidencia.ubicacion, nombre: evidencia.nombre })) } } });
   revalidatePath("/notas");
 }
