@@ -8,29 +8,64 @@ import { Crown, MousePointerClick, UserRound, Users } from "lucide-react";
 import Link from "next/link";
 
 type Search = Promise<{ adminId?: string; vendedorId?: string }>;
+type UsuarioJerarquia = {
+  id: string;
+  usuario: string;
+  nombre: string | null;
+  rol: { nombre: string };
+};
+
+function normalizeRoleName(roleName: string) {
+  return roleName.trim().toUpperCase();
+}
+
+function getRoleLabel(roleName: string) {
+  const normalizedRole = normalizeRoleName(roleName);
+  if (normalizedRole === "SUPER_ADMIN") return "Super admin";
+  if (normalizedRole === "ADMINISTRADOR") return "Administrador";
+  if (normalizedRole === "VENDEDOR") return "Vendedor";
+  return roleName;
+}
+
+function isSuperAdmin(user: UsuarioJerarquia) {
+  return normalizeRoleName(user.rol.nombre) === "SUPER_ADMIN";
+}
 
 async function getData(adminId?: string, vendedorId?: string) {
   const admins = await prisma.usuarios.findMany({
-    where: { rol: { nombre: "ADMINISTRADOR" }, activo: true },
-    select: { id: true, usuario: true, nombre: true },
-    orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
+    where: { rol: { nombre: { in: ["SUPER_ADMIN", "ADMINISTRADOR"] } }, activo: true },
+    select: { id: true, usuario: true, nombre: true, rol: { select: { nombre: true } } },
+    orderBy: [{ rol: { nombre: "desc" } }, { nombre: "asc" }, { usuario: "asc" }],
   });
 
   const selectedAdminId = adminId && admins.some((a) => a.id === adminId) ? adminId : null;
+  const selectedAdmin = selectedAdminId ? admins.find((admin) => admin.id === selectedAdminId) : null;
 
-  const vendedoresBase = selectedAdminId
+  const vendedoresBase = selectedAdmin
     ? await prisma.usuarios.findMany({
-        where: { adminPadreId: selectedAdminId, activo: true },
-        select: { id: true, usuario: true, nombre: true },
+        where: {
+          activo: true,
+          OR: [
+            { adminPadreId: selectedAdmin.id },
+            ...(isSuperAdmin(selectedAdmin)
+              ? [
+                  {
+                    adminPadreId: null,
+                    rol: { nombre: "VENDEDOR" },
+                  },
+                ]
+              : []),
+          ],
+        },
+        select: { id: true, usuario: true, nombre: true, rol: { select: { nombre: true } } },
         orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
       })
     : [];
 
-  const selectedAdmin = selectedAdminId ? admins.find((admin) => admin.id === selectedAdminId) : null;
   const vendedores = selectedAdmin
     ? [
-        { ...selectedAdmin, tipo: "Administrador" },
-        ...vendedoresBase.map((vendedor) => ({ ...vendedor, tipo: "Vendedor" })),
+        { ...selectedAdmin, tipo: getRoleLabel(selectedAdmin.rol.nombre) },
+        ...vendedoresBase.map((vendedor) => ({ ...vendedor, tipo: getRoleLabel(vendedor.rol.nombre) })),
       ]
     : [];
 
@@ -57,12 +92,12 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
 
   return (
     <div className="container mx-auto py-2 space-y-4">
-      <HeaderComponent Icon={Users} screenName="Jerarquía de usuarios" description="Selecciona administrador y luego vendedor o administrador para consultar sus clientes" />
+      <HeaderComponent Icon={Users} screenName="Jerarquía de usuarios" description="Selecciona un super admin o administrador y luego un usuario para consultar sus clientes" />
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5" />1) Selecciona Administrador</CardTitle>
-          <CardDescription>Haz click en un administrador para cargar sus vendedores y sus clientes directos.</CardDescription>
+          <CardTitle className="flex items-center gap-2"><Crown className="h-5 w-5" />1) Selecciona Super admin o Administrador</CardTitle>
+          <CardDescription>Haz click en un super admin o administrador para cargar sus vendedores y sus clientes directos.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {admins.map((admin) => {
@@ -73,8 +108,13 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
                 href={`/usuarios/jerarquia?adminId=${admin.id}`}
                 className={`rounded-xl border p-3 transition hover:bg-muted/40 ${active ? "border-primary bg-primary/5" : ""}`}
               >
-                <p className="font-medium">{admin.nombre || admin.usuario}</p>
-                <p className="text-xs text-muted-foreground">@{admin.usuario}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-medium">{admin.nombre || admin.usuario}</p>
+                    <p className="text-xs text-muted-foreground">@{admin.usuario}</p>
+                  </div>
+                  <Badge variant={isSuperAdmin(admin) ? "default" : "secondary"}>{getRoleLabel(admin.rol.nombre)}</Badge>
+                </div>
               </Link>
             );
           })}
@@ -83,16 +123,16 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><MousePointerClick className="h-5 w-5" />2) Selecciona Vendedor o Administrador</CardTitle>
+          <CardTitle className="flex items-center gap-2"><MousePointerClick className="h-5 w-5" />2) Selecciona usuario</CardTitle>
           <CardDescription>
-            {selectedAdminId ? "Haz click en el administrador o en un vendedor para ver sus clientes." : "Primero debes seleccionar un administrador."}
+            {selectedAdminId ? "Haz click en el super admin, administrador o vendedor para ver sus clientes." : "Primero debes seleccionar un super admin o administrador."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {!selectedAdminId ? (
-            <p className="text-sm text-muted-foreground">Sin administrador seleccionado.</p>
+            <p className="text-sm text-muted-foreground">Sin super admin o administrador seleccionado.</p>
           ) : vendedores.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Este administrador no tiene vendedores.</p>
+            <p className="text-sm text-muted-foreground">Este usuario no tiene vendedores.</p>
           ) : (
             vendedores.map((v) => {
               const active = selectedVendedorId === v.id;
@@ -118,12 +158,12 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><UserRound className="h-5 w-5" />3) Clientes del usuario seleccionado</CardTitle>
           <CardDescription>
-            {selectedVendedorId ? `Mostrando ${clientes.length} clientes asignados.` : "Selecciona un vendedor o administrador para consultar clientes."}
+            {selectedVendedorId ? `Mostrando ${clientes.length} clientes asignados.` : "Selecciona un usuario para consultar clientes."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 max-h-[520px] overflow-auto">
           {!selectedVendedorId ? (
-            <p className="text-sm text-muted-foreground">No hay vendedor o administrador seleccionado.</p>
+            <p className="text-sm text-muted-foreground">No hay usuario seleccionado.</p>
           ) : clientes.length === 0 ? (
             <p className="text-sm text-muted-foreground">Este usuario no tiene clientes asignados.</p>
           ) : (
