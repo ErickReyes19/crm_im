@@ -51,13 +51,17 @@ export async function createUsuario(data: Usuario): Promise<Usuario> {
 
   let adminPadreId: string | null = null;
   const isSuper = session.Permiso?.includes("ver_todos_usuarios") ?? false;
+  const isVendedor = role.nombre.trim().toLowerCase() === "vendedor";
   if (!isSuper) {
-    if (role.nombre.toLowerCase() !== "vendedor") throw new Error("Solo puedes crear vendedores");
+    if (!isVendedor) throw new Error("Solo puedes crear vendedores");
+    adminPadreId = session.IdUser;
+  } else if (isVendedor) {
     adminPadreId = session.IdUser;
   }
 
   const newUser = await prisma.usuarios.create({ data: { id: randomUUID(), usuario: data.usuario, rol_id: data.rol_id, email: data.email, contrasena: hashed, activo: true, DebeCambiarPassword: true, adminPadreId } });
   revalidatePath("/usuarios");
+  revalidatePath("/usuarios/jerarquia");
   return { id: newUser.id, usuario: newUser.usuario, rol: "", email: newUser.email, nombre: newUser.nombre ?? "", fotoUrl: newUser.fotoUrl ?? "", telefono: newUser.telefono ?? "", ciudad: newUser.ciudad ?? "", direccion: newUser.direccion ?? "", rol_id: newUser.rol_id, activo: newUser.activo };
 }
 
