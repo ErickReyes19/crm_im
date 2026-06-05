@@ -115,7 +115,8 @@ export async function createVenta(data: Venta) {
       total,
       estado: data.estado,
       metodoPago: data.metodoPago,
-      evidenciaTransferenciaB64: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaB64 : null,
+      evidenciaTransferenciaUbicacion: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaUbicacion : null,
+      evidenciaTransferenciaNombre: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaNombre : null,
       productos: { create: detalles },
     },
   });
@@ -142,7 +143,8 @@ export async function updateVenta(data: Venta) {
         total,
         estado: data.estado,
         metodoPago: data.metodoPago,
-        evidenciaTransferenciaB64: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaB64 : null,
+        evidenciaTransferenciaUbicacion: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaUbicacion : null,
+        evidenciaTransferenciaNombre: data.metodoPago === "TRANSFERENCIA" ? data.evidenciaTransferenciaNombre : null,
         productos: { create: detalles },
       },
     });

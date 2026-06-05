@@ -16,13 +16,14 @@ export const VentaSchema = z.object({
   total: z.coerce.number().min(0, "El total no puede ser negativo").optional(),
   estado: z.enum(["PROCESO", "ENVIO", "ENTREGADA"]),
   metodoPago: MetodoPagoVentaSchema.default("EFECTIVO"),
-  evidenciaTransferenciaB64: z.string().optional().nullable(),
+  evidenciaTransferenciaUbicacion: z.string().optional().nullable(),
+  evidenciaTransferenciaNombre: z.string().optional().nullable(),
   productos: z.array(VentaProductoSchema).min(1, "Agrega al menos un producto"),
 }).superRefine((data, ctx) => {
-  if (data.metodoPago === "TRANSFERENCIA" && !data.evidenciaTransferenciaB64) {
+  if (data.metodoPago === "TRANSFERENCIA" && !data.evidenciaTransferenciaUbicacion) {
     ctx.addIssue({
       code: "custom",
-      path: ["evidenciaTransferenciaB64"],
+      path: ["evidenciaTransferenciaUbicacion"],
       message: "Debes subir una evidencia cuando el pago es por transferencia",
     });
   }

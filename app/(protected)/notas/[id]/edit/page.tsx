@@ -15,5 +15,5 @@ export default async function EditNotaPage({ params }: { params: Promise<{ id: s
   if (!nota) redirect("/notas");
   const clientes = await getClientesOpciones();
 
-  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={Pencil} description="Edita una nota" screenName="Editar nota" /><Formulario isUpdate initialData={{ id: nota.id, clienteId: nota.clienteId, contenido: nota.contenido, evidencias: nota.evidencias.map((e) => e.imagenB64) }} clientes={clientes} /></div>;
+  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={Pencil} description="Edita una nota" screenName="Editar nota" /><Formulario isUpdate initialData={{ id: nota.id, clienteId: nota.clienteId, contenido: nota.contenido, evidencias: nota.evidencias.flatMap((e) => e.ubicacion && e.nombre ? [{ ubicacion: e.ubicacion, nombre: e.nombre }] : []) }} clientes={clientes} /></div>;
 }

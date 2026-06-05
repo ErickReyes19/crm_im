@@ -45,13 +45,16 @@ function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario
   }, 0);
 }
 
-function fileToBase64(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("No se pudo leer la evidencia"));
-    reader.readAsDataURL(file);
-  });
+type UploadedImage = { ubicacion: string; nombre: string; url?: string };
+
+async function uploadImage(file: File, folder: "ventas") {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`/api/uploads/${folder}`, { method: "POST", body: formData });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "No se pudo subir la evidencia.");
+  return payload as UploadedImage;
 }
 
 export function Formulario({ isUpdate, initialData, clientes, productos }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; productos: ProductoOpcion[] }) {
@@ -60,7 +63,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
   const metodoPago = useWatch({ control: form.control, name: "metodoPago" });
-  const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaB64" });
+  const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaUbicacion" });
   const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
   const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -93,7 +96,8 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
   async function handleEvidenciaChange(file?: File) {
     if (!file) {
-      form.setValue("evidenciaTransferenciaB64", "", { shouldValidate: true });
+      form.setValue("evidenciaTransferenciaUbicacion", "", { shouldValidate: true });
+      form.setValue("evidenciaTransferenciaNombre", "", { shouldValidate: true });
       return;
     }
 
@@ -104,9 +108,10 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
     setCargandoEvidencia(true);
     try {
-      const base64 = await fileToBase64(file);
-      form.setValue("evidenciaTransferenciaB64", base64, { shouldValidate: true, shouldDirty: true });
-      toast.success("Evidencia cargada.");
+      const evidencia = await uploadImage(file, "ventas");
+      form.setValue("evidenciaTransferenciaUbicacion", evidencia.ubicacion, { shouldValidate: true, shouldDirty: true });
+      form.setValue("evidenciaTransferenciaNombre", evidencia.nombre, { shouldValidate: true, shouldDirty: true });
+      toast.success("Evidencia subida a S3.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "No se pudo cargar la evidencia.");
     } finally {
@@ -157,11 +162,11 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
       </div>
 
       {metodoPago === "TRANSFERENCIA" && (
-        <Field data-invalid={Boolean(form.formState.errors.evidenciaTransferenciaB64)} className="rounded-lg border p-4">
+        <Field data-invalid={Boolean(form.formState.errors.evidenciaTransferenciaUbicacion)} className="rounded-lg border p-4">
           <FieldLabel>Evidencia de transferencia</FieldLabel>
           <FieldContent><Input type="file" accept="image/*" onChange={(event) => handleEvidenciaChange(event.target.files?.[0])} disabled={cargandoEvidencia} /></FieldContent>
-          <FieldDescription>{evidenciaTransferencia ? "Evidencia guardada en base64 lista para enviarse." : "Sube una foto o captura de la transferencia."}</FieldDescription>
-          {form.formState.errors.evidenciaTransferenciaB64 && <FieldError errors={[form.formState.errors.evidenciaTransferenciaB64]} />}
+          <FieldDescription>{evidenciaTransferencia ? "Evidencia subida a S3 lista para guardarse." : "Sube una foto o captura de la transferencia."}</FieldDescription>
+          {form.formState.errors.evidenciaTransferenciaUbicacion && <FieldError errors={[form.formState.errors.evidenciaTransferenciaUbicacion]} />}
         </Field>
       )}
 

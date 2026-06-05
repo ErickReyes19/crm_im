@@ -164,7 +164,8 @@ model Venta {
   total     Decimal    @db.Decimal(10, 2)
   estado    EstadoVenta @default(PROCESO)
   metodoPago MetodoPagoVenta @default(EFECTIVO)
-  evidenciaTransferenciaB64 String? @db.LongText
+  evidenciaTransferenciaUbicacion String? @db.VarChar(1024)
+  evidenciaTransferenciaNombre    String? @db.VarChar(255)
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
 
@@ -236,7 +237,8 @@ model Tarea {
 model NotaEvidencia {
   id        String   @id @default(uuid())
   notaId    String
-  imagenB64 String   @db.LongText
+  ubicacion String?  @db.VarChar(1024)
+  nombre    String?  @db.VarChar(255)
   createAt  DateTime @default(now())
 
   nota Nota @relation(fields: [notaId], references: [id], onDelete: Cascade)
