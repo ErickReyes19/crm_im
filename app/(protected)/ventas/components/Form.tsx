@@ -61,13 +61,15 @@ async function uploadImage(file: File, folder: "ventas") {
   // Upload directly to S3 using the presigned URL
   const putResp = await fetch(presignPayload.url, {
     method: "PUT",
+    mode: "cors",
     headers: { "Content-Type": file.type },
     body: file,
   });
 
   if (!putResp.ok) {
     const text = await putResp.text().catch(() => "");
-    throw new Error(text || `Error al subir a S3 (${putResp.status})`);
+    const message = text || `Error al subir a S3 (${putResp.status})`;
+    throw new Error(`${message}. Si ves un error CORS, revisa la configuración CORS del bucket S3 y permite PUT desde tu dominio.`);
   }
 
   return { ubicacion: presignPayload.ubicacion, nombre: presignPayload.nombre, url: `/api/media/${presignPayload.ubicacion}` } as UploadedImage;
