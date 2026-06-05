@@ -80,6 +80,15 @@ export async function getImageFromS3(key: string) {
   return fetch(url);
 }
 
+export async function createPresignedPutUrl(originalName: string, folder: "ventas" | "notas", contentType: string, expiresIn = 900) {
+  const name = sanitizeFileName(originalName || "imagen");
+  const key = `${folder}/${randomUUID()}-${name}`;
+  const client = getS3Client();
+  const command = new PutObjectCommand({ Bucket: getBucketName(), Key: key, ContentType: contentType || "application/octet-stream" });
+  const url = await getSignedUrl(client, command, { expiresIn });
+  return { url, key, nombre: name };
+}
+
 export function getMediaUrl(ubicacion?: string | null) {
   return ubicacion ? `/api/media/${encodeKey(ubicacion)}` : "";
 }

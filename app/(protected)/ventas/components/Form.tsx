@@ -48,20 +48,29 @@ function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario
 type UploadedImage = { ubicacion: string; nombre: string; url?: string };
 
 async function uploadImage(file: File, folder: "ventas") {
-  const formData = new FormData();
-  formData.append("file", file);
+  // Request a presigned PUT URL from the server
+  const presignResp = await fetch(`/api/uploads/${folder}?presign=1`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, contentType: file.type }),
+  });
 
-  const response = await fetch(`/api/uploads/${folder}`, { method: "POST", body: formData });
-  let payload: any = {};
-  try {
-    payload = await response.json();
-  } catch {
-    const text = await response.text().catch(() => "");
-    payload = { error: text };
+  const presignPayload = await presignResp.json().catch(() => ({}));
+  if (!presignResp.ok) throw new Error(typeof presignPayload.error === "string" && presignPayload.error ? presignPayload.error : "No se pudo obtener la URL para subir la evidencia.");
+
+  // Upload directly to S3 using the presigned URL
+  const putResp = await fetch(presignPayload.url, {
+    method: "PUT",
+    headers: { "Content-Type": file.type },
+    body: file,
+  });
+
+  if (!putResp.ok) {
+    const text = await putResp.text().catch(() => "");
+    throw new Error(text || `Error al subir a S3 (${putResp.status})`);
   }
 
-  if (!response.ok) throw new Error(typeof payload.error === "string" && payload.error ? payload.error : "No se pudo subir la evidencia.");
-  return payload as UploadedImage;
+  return { ubicacion: presignPayload.ubicacion, nombre: presignPayload.nombre, url: `/api/media/${presignPayload.ubicacion}` } as UploadedImage;
 }
 
 export function Formulario({ isUpdate, initialData, clientes, productos }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; productos: ProductoOpcion[] }) {
