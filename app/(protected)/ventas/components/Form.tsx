@@ -52,8 +52,15 @@ async function uploadImage(file: File, folder: "ventas") {
   formData.append("file", file);
 
   const response = await fetch(`/api/uploads/${folder}`, { method: "POST", body: formData });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "No se pudo subir la evidencia.");
+  let payload: any = {};
+  try {
+    payload = await response.json();
+  } catch {
+    const text = await response.text().catch(() => "");
+    payload = { error: text };
+  }
+
+  if (!response.ok) throw new Error(typeof payload.error === "string" && payload.error ? payload.error : "No se pudo subir la evidencia.");
   return payload as UploadedImage;
 }
 
