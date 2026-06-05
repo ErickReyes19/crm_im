@@ -27,7 +27,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Venta
   return (
     <div className="container mx-auto space-y-4 py-2">
       <HeaderComponent Icon={ListCheck} description="En este apartado podrá ver todas las ventas" screenName="Ventas" />
-      <DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} resetHref="/ventas" />
+      <DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} baseHref="/ventas" />
       <div className="hidden md:block"><DataTable columns={columns} data={data} userFilter={userFilter} /></div>
       <div className="block md:hidden"><VentasListMobile ventas={data} userFilter={userFilter} /></div>
     </div>

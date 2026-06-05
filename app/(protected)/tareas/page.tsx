@@ -22,5 +22,5 @@ export default async function TareasPage({ searchParams }: { searchParams: Tarea
   const data: TareaTableRow[] = tareas.map((t) => ({ ...t, descripcion: t.descripcion ?? null, usuarioFiltro: getUserDisplayName(t.usuario) }));
   const showUserFilter = isSuperAdminSession(session!) || permisos.includes("gestionar_mi_equipo");
 
-  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={ClipboardList} description="Tareas de seguimiento por fecha" screenName="Tareas" /><DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} resetHref="/tareas" /><DataTable columns={columns} data={data} userFilter={{ enabled: showUserFilter, placeholder: "Ver tareas por usuario" }} /></div>;
+  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={ClipboardList} description="Tareas de seguimiento por fecha" screenName="Tareas" /><DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} baseHref="/tareas" /><DataTable columns={columns} data={data} userFilter={{ enabled: showUserFilter, placeholder: "Ver tareas por usuario" }} /></div>;
 }
