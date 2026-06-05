@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { createHash, randomUUID } from "crypto";
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export type StoredImage = {
@@ -32,10 +32,6 @@ function sanitizeFileName(name: string) {
 
 function encodeKey(key: string) {
   return key.split("/").map(encodeURIComponent).join("/");
-}
-
-function sha256(value: string | Buffer) {
-  return createHash("sha256").update(value).digest("hex");
 }
 
 let s3Client: S3Client | undefined;
@@ -87,6 +83,16 @@ export async function createPresignedPutUrl(originalName: string, folder: "venta
   const command = new PutObjectCommand({ Bucket: getBucketName(), Key: key, ContentType: contentType || "application/octet-stream" });
   const url = await getSignedUrl(client, command, { expiresIn });
   return { url, key, nombre: name };
+}
+
+export async function deleteImageFromS3(key: string) {
+  const client = getS3Client();
+  try {
+    await client.send(new DeleteObjectCommand({ Bucket: getBucketName(), Key: key }));
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    throw new Error(`No se pudo eliminar la imagen de S3. ${msg}`);
+  }
 }
 
 export function getMediaUrl(ubicacion?: string | null) {

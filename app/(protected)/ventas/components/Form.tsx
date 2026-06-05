@@ -66,6 +66,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaUbicacion" });
   const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
   const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
+  const [isDeletingEvidencia, setIsDeletingEvidencia] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [productoSearch, setProductoSearch] = useState<Record<string, string>>({});
 
@@ -119,6 +120,29 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
     }
   }
 
+  async function handleRemoveEvidencia() {
+    const key = evidenciaTransferencia;
+    if (!key) return;
+
+    setIsDeletingEvidencia(true);
+    try {
+      const response = await fetch("/api/uploads/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "No se pudo eliminar la evidencia.");
+      form.setValue("evidenciaTransferenciaUbicacion", "", { shouldValidate: true, shouldDirty: true });
+      form.setValue("evidenciaTransferenciaNombre", "", { shouldValidate: true, shouldDirty: true });
+      toast.success("Evidencia eliminada de S3.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo eliminar la evidencia.");
+    } finally {
+      setIsDeletingEvidencia(false);
+    }
+  }
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 rounded-xl border bg-card p-4 shadow-sm md:p-6">
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -164,8 +188,20 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
       {metodoPago === "TRANSFERENCIA" && (
         <Field data-invalid={Boolean(form.formState.errors.evidenciaTransferenciaUbicacion)} className="rounded-lg border p-4">
           <FieldLabel>Evidencia de transferencia</FieldLabel>
-          <FieldContent><Input type="file" accept="image/*" onChange={(event) => handleEvidenciaChange(event.target.files?.[0])} disabled={cargandoEvidencia} /></FieldContent>
+          <FieldContent><Input type="file" accept="image/*" onChange={(event) => handleEvidenciaChange(event.target.files?.[0])} disabled={cargandoEvidencia || isDeletingEvidencia} /></FieldContent>
           <FieldDescription>{evidenciaTransferencia ? "Evidencia subida a S3 lista para guardarse." : "Sube una foto o captura de la transferencia."}</FieldDescription>
+
+          {evidenciaTransferencia && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] items-start">
+              <div className="overflow-hidden rounded-xl border">
+                <img src={`/api/media/${evidenciaTransferencia}`} alt={form.getValues("evidenciaTransferenciaNombre") || "Evidencia"} className="h-36 w-full object-cover" />
+              </div>
+              <Button type="button" variant="outline" className="h-10 self-start" disabled={isDeletingEvidencia} onClick={handleRemoveEvidencia}>
+                {isDeletingEvidencia ? "Eliminando..." : "Eliminar"}
+              </Button>
+            </div>
+          )}
+
           {form.formState.errors.evidenciaTransferenciaUbicacion && <FieldError errors={[form.formState.errors.evidenciaTransferenciaUbicacion]} />}
         </Field>
       )}

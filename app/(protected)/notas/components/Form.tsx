@@ -37,6 +37,7 @@ export function Formulario({ clientes, initialData, isUpdate = false }: { client
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const form = useForm<NotaFormValues, unknown, NotaFormOutput>({
     resolver: zodResolver(NotaSchema),
     defaultValues: { id: initialData?.id, clienteId: initialData?.clienteId ?? "", contenido: initialData?.contenido ?? "", evidencias: initialData?.evidencias ?? [] },
@@ -80,8 +81,30 @@ export function Formulario({ clientes, initialData, isUpdate = false }: { client
     }
   }
 
-  function removeEvidencia(index: number) {
-    form.setValue("evidencias", (form.getValues("evidencias") ?? []).filter((_, itemIndex) => itemIndex !== index), { shouldValidate: true, shouldDirty: true });
+  async function removeEvidencia(index: number) {
+    const evidencias = form.getValues("evidencias") ?? [];
+    const evidencia = evidencias[index];
+    if (!evidencia?.ubicacion) {
+      form.setValue("evidencias", evidencias.filter((_, itemIndex) => itemIndex !== index), { shouldValidate: true, shouldDirty: true });
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch("/api/uploads/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: evidencia.ubicacion }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(typeof payload.error === "string" ? payload.error : "No se pudo eliminar la evidencia.");
+      form.setValue("evidencias", evidencias.filter((_, itemIndex) => itemIndex !== index), { shouldValidate: true, shouldDirty: true });
+      toast.success("Evidencia eliminada.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "No se pudo eliminar la evidencia.");
+    } finally {
+      setIsDeleting(false);
+    }
   }
 
   const evidencias = useWatch({ control: form.control, name: "evidencias" }) ?? [];
@@ -95,8 +118,17 @@ export function Formulario({ clientes, initialData, isUpdate = false }: { client
       <Field data-invalid={fieldState.invalid}><FieldLabel>Nota</FieldLabel><FieldContent><Textarea rows={4} {...field} value={field.value ?? ""} /></FieldContent>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Field>
     )} />
 
-    <Field><FieldLabel>Evidencias (imágenes)</FieldLabel><FieldContent><Input type="file" multiple accept="image/*" onChange={(e) => onFilesSelected(e.target.files)} disabled={isUploading} /></FieldContent></Field>
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">{evidencias.map((img, i) => <div key={`${img.ubicacion}-${i}`} className="relative overflow-hidden rounded border"><img src={mediaUrl(img.ubicacion)} alt={img.nombre || `Evidencia ${i + 1}`} className="h-24 w-full object-cover" /><Button type="button" variant="outline" size="icon" className="absolute right-1 top-1 h-7 w-7 bg-background/90" onClick={() => removeEvidencia(i)}><X className="h-4 w-4" /></Button></div>)}</div>
+    <Field><FieldLabel>Evidencias (imágenes)</FieldLabel><FieldContent><Input type="file" multiple accept="image/*" onChange={(e) => onFilesSelected(e.target.files)} disabled={isUploading || isDeleting} /></FieldContent></Field>
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      {evidencias.map((img, i) => (
+        <div key={`${img.ubicacion}-${i}`} className="relative overflow-hidden rounded border">
+          <img src={mediaUrl(img.ubicacion)} alt={img.nombre || `Evidencia ${i + 1}`} className="h-24 w-full object-cover" />
+          <Button type="button" variant="outline" size="icon" className="absolute right-1 top-1 h-7 w-7 bg-background/90" onClick={() => removeEvidencia(i)} disabled={isDeleting}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      ))}
+    </div>
 
     <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.push("/notas")}>Cancelar</Button><Button type="submit" disabled={isSaving || isUploading || form.formState.isSubmitting}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUploading ? "Subiendo..." : isUpdate ? "Actualizar" : "Crear"}</Button></div>
   </form>;
