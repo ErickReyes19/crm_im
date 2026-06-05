@@ -22,5 +22,5 @@ export default async function NotasPage({ searchParams }: { searchParams: NotasS
   const data: NotaTableRow[] = notas.map((nota) => ({ ...nota, usuarioFiltro: getUserDisplayName(nota.usuario) }));
   const showUserFilter = isSuperAdminSession(session!) || permisos.includes("gestionar_mi_equipo");
 
-  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={StickyNote} description="Notas comerciales por cliente" screenName="Notas" /><DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} resetHref="/notas" /><DataTable columns={columns} data={data} userFilter={{ enabled: showUserFilter, placeholder: "Ver notas por usuario" }} /></div>;
+  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={StickyNote} description="Notas comerciales por cliente" screenName="Notas" /><DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} baseHref="/notas" /><DataTable columns={columns} data={data} userFilter={{ enabled: showUserFilter, placeholder: "Ver notas por usuario" }} /></div>;
 }
