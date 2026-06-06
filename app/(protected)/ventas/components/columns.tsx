@@ -25,6 +25,10 @@ export type VentaTableRow = {
   total?: number;
   estado: EstadoVenta;
   metodoPago?: "EFECTIVO" | "TRANSFERENCIA";
+  tipoDocumento?: "RECIBO" | "FACTURA";
+  isv?: number;
+  conEnvio?: boolean;
+  envio?: number;
   canEditEstado?: boolean;
   cliente?: { nombre: string; apellido: string } | null;
   usuario?: { id: string; usuario: string; nombre: string | null } | null;
@@ -90,6 +94,9 @@ export const columns: ColumnDef<VentaTableRow>[] = [
     header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Total <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
     cell: ({ row }) => Number(row.original.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" }),
   },
+  { id: "tipoDocumento", header: "Documento", cell: ({ row }) => row.original.tipoDocumento === "FACTURA" ? "Factura" : "Recibo" },
+  { id: "isv", header: "ISV", cell: ({ row }) => Number(row.original.isv ?? 0).toLocaleString("es-DO", { style: "currency", currency: "HNL" }) },
+  { id: "envio", header: "Envío", cell: ({ row }) => row.original.conEnvio ? Number(row.original.envio ?? 0).toLocaleString("es-DO", { style: "currency", currency: "HNL" }) : "Sin envío" },
   {
     id: "productosResumen",
     header: "Productos",

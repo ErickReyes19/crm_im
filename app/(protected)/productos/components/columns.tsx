@@ -14,6 +14,15 @@ export type ProductoTableRow = Producto & {
 export const columns: ColumnDef<ProductoTableRow>[] = [
   { accessorKey: "nombre", header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Producto <ArrowUpDown className="ml-2 h-4 w-4" /></Button> },
   { accessorKey: "descripcion", header: "Descripción" },
+  {
+    accessorKey: "stock",
+    header: "Stock",
+    cell: ({ row }) => {
+      const bajoMinimo = row.original.stock <= row.original.stockMinimo;
+      return <span className={bajoMinimo ? "font-semibold text-destructive" : ""}>{row.original.stock}</span>;
+    },
+  },
+  { accessorKey: "stockMinimo", header: "Stock mínimo" },
   { accessorKey: "activo", header: "Estado", cell: ({ row }) => row.original.activo ? "Activo" : "Inactivo" },
   { id: "creadoPor", accessorFn: (producto) => producto.creadoPor?.usuario ?? "", header: "Creado por", cell: ({ row }) => row.original.creadoPor?.usuario ?? "-" },
   {

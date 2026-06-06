@@ -61,6 +61,26 @@ export function Formulario({ isUpdate, initialData }: { isUpdate: boolean; initi
         )} />
       </div>
 
+      <div className="grid gap-5 md:grid-cols-2">
+        <Controller name="stock" control={form.control} render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="max-w-xs">
+            <FieldLabel>Stock</FieldLabel>
+            <FieldContent><Input type="number" min="0" step="1" placeholder="0" {...field} value={Number(field.value ?? 0)} /></FieldContent>
+            <FieldDescription>Cantidad disponible en inventario.</FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )} />
+
+        <Controller name="stockMinimo" control={form.control} render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="max-w-xs">
+            <FieldLabel>Stock mínimo</FieldLabel>
+            <FieldContent><Input type="number" min="0" step="1" placeholder="0" {...field} value={Number(field.value ?? 0)} /></FieldContent>
+            <FieldDescription>Umbral para identificar bajo inventario.</FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )} />
+      </div>
+
       <Controller name="descripcion" control={form.control} render={({ field, fieldState }) => (
         <Field data-invalid={fieldState.invalid} className="max-w-3xl">
           <FieldLabel>Descripción</FieldLabel>

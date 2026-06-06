@@ -47,7 +47,10 @@ export default async function VentaDetailPage({ params }: { params: Promise<{ id
           <p className="flex items-center gap-2"><UserRound className="h-4 w-4" />Vendedor: <span className="font-medium text-foreground">{venta.usuario?.nombre ? `${venta.usuario.nombre} (${venta.usuario.usuario})` : venta.usuario?.usuario ?? "Usuario"}</span></p>
           <p className="flex items-center gap-2"><ListChecks className="h-4 w-4" />Fecha: <span className="font-medium text-foreground">{formatHondurasDateTime(venta.createAt)}</span></p>
           <p className="flex items-center gap-2"><Truck className="h-4 w-4" />Método de pago: <span className="font-medium text-foreground">{venta.metodoPago === "TRANSFERENCIA" ? "Transferencia" : "Efectivo"}</span></p>
-          <p className="flex items-center gap-2"><DollarSign className="h-4 w-4" />Total: <span className="font-medium text-foreground">{Number(venta.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
+          <p className="flex items-center gap-2"><ListChecks className="h-4 w-4" />Documento: <span className="font-medium text-foreground">{venta.tipoDocumento === "FACTURA" ? "Factura" : "Recibo"}</span></p>
+          <p className="flex items-center gap-2"><DollarSign className="h-4 w-4" />ISV: <span className="font-medium text-foreground">{Number(venta.isv).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
+          <p className="flex items-center gap-2"><Truck className="h-4 w-4" />Envío: <span className="font-medium text-foreground">{venta.conEnvio ? Number(venta.envio).toLocaleString("es-DO", { style: "currency", currency: "HNL" }) : "Sin envío"}</span></p>
+          <p className="flex items-center gap-2"><DollarSign className="h-4 w-4" />Total venta: <span className="font-medium text-foreground">{Number(venta.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
         </div>
 
 
@@ -62,6 +65,14 @@ export default async function VentaDetailPage({ params }: { params: Promise<{ id
             )}
           </div>
         )}
+
+        <div className="mb-4 rounded-2xl border bg-background p-4 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground">Resumen de importes</p>
+          <p>Subtotal productos: <span className="text-foreground">{(Number(venta.total) + Number(venta.isv)).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
+          <p>ISV separado: <span className="text-foreground">{Number(venta.isv).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
+          <p>Total neto de venta: <span className="text-foreground">{Number(venta.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" })}</span></p>
+          <p>Envío cobrado al cliente: <span className="text-foreground">{venta.conEnvio ? Number(venta.envio).toLocaleString("es-DO", { style: "currency", currency: "HNL" }) : "Sin envío"}</span></p>
+        </div>
 
         <div className="overflow-hidden rounded-2xl border bg-background">
           <div className="bg-muted px-4 py-3 text-sm font-medium text-muted-foreground">Productos</div>
