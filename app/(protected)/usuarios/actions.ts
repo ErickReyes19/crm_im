@@ -116,3 +116,32 @@ export async function getUsuariosOpciones(): Promise<Array<{ id: string; usuario
   const scopedIds = await getScopedUserIds(session);
   return prisma.usuarios.findMany({ where: { id: { in: scopedIds } }, select: { id: true, usuario: true }, orderBy: { usuario: "asc" } });
 }
+
+export async function reasignarVendedorAdministrador(vendedorId: string, adminDestinoId: string) {
+  const session = await requireSession();
+  if (!session.Permiso?.includes("super_admin")) throw new Error("No autorizado");
+  if (vendedorId === adminDestinoId) throw new Error("El vendedor no puede asignarse a sí mismo");
+
+  const [vendedor, adminDestino] = await Promise.all([
+    prisma.usuarios.findFirst({
+      where: { id: vendedorId, activo: true, rol: { nombre: "VENDEDOR" } },
+      select: { id: true },
+    }),
+    prisma.usuarios.findFirst({
+      where: { id: adminDestinoId, activo: true, rol: { nombre: { in: ["SUPER_ADMIN", "ADMINISTRADOR"] } } },
+      select: { id: true },
+    }),
+  ]);
+
+  if (!vendedor) throw new Error("Selecciona un vendedor activo válido");
+  if (!adminDestino) throw new Error("Selecciona un super admin o administrador activo válido");
+
+  await prisma.usuarios.update({
+    where: { id: vendedorId },
+    data: { adminPadreId: adminDestinoId },
+  });
+
+  revalidatePath("/usuarios");
+  revalidatePath("/usuarios/jerarquia");
+  return { ok: true };
+}

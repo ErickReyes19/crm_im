@@ -9,15 +9,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createVenta, updateVenta } from "../actions";
-import { TipoPrecioVenta, VentaFormValues, VentaSchema } from "../schema";
+import { TipoDocumentoVenta, TipoPrecioVenta, VentaFormValues, VentaSchema } from "../schema";
 
 type VentaFormOutput = z.output<typeof VentaSchema>;
 type ClienteOpcion = { id: string; nombre: string; apellido: string };
-type ProductoOpcion = { id: string; nombre: string; descripcion: string };
+type ProductoOpcion = { id: string; nombre: string; descripcion: string; stock: number; stockMinimo: number };
 
 const descuentos: Array<{ value: TipoPrecioVenta; label: string }> = [
   { value: "NORMAL", label: "Normal" },
@@ -35,7 +35,7 @@ function getPrecioConDescuento(precioUnitario: number, tipoPrecio: TipoPrecioVen
   return precioUnitario;
 }
 
-function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario?: number | string; tipoPrecio?: TipoPrecioVenta }> | undefined) {
+function calcularSubtotalProductos(items: Array<{ cantidad?: number | string; precioUnitario?: number | string; tipoPrecio?: TipoPrecioVenta }> | undefined) {
   return (items ?? []).reduce((total, item) => {
     const cantidad = Number(item.cantidad ?? 0);
     const precioUnitario = Number(item.precioUnitario ?? 0);
@@ -43,6 +43,13 @@ function calcularTotal(items: Array<{ cantidad?: number | string; precioUnitario
     const precioAjustado = getPrecioConDescuento(Number.isFinite(precioUnitario) ? precioUnitario : 0, tipoPrecio);
     return total + precioAjustado * (Number.isFinite(cantidad) ? cantidad : 0);
   }, 0);
+}
+
+function calcularTotalesVenta(subtotalProductos: number, tipoDocumento: TipoDocumentoVenta) {
+  if (tipoDocumento !== "FACTURA") return { total: subtotalProductos, isv: 0 };
+
+  const isv = subtotalProductos * 0.15;
+  return { total: subtotalProductos - isv, isv };
 }
 
 type UploadedImage = { ubicacion: string; nombre: string; url?: string };
@@ -63,23 +70,62 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
   const metodoPago = useWatch({ control: form.control, name: "metodoPago" });
+  const tipoDocumento = useWatch({ control: form.control, name: "tipoDocumento" }) ?? "RECIBO";
+  const conEnvio = useWatch({ control: form.control, name: "conEnvio" });
   const evidenciaTransferencia = useWatch({ control: form.control, name: "evidenciaTransferenciaUbicacion" });
-  const totalCalculado = calcularTotal(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
+  const subtotalProductos = calcularSubtotalProductos(productosSeleccionados as Array<{ cantidad?: string | number; precioUnitario?: string | number; tipoPrecio?: TipoPrecioVenta }> | undefined);
+  const { total: totalCalculado, isv: isvCalculado } = calcularTotalesVenta(subtotalProductos, tipoDocumento);
   const [cargandoEvidencia, setCargandoEvidencia] = useState(false);
   const [isDeletingEvidencia, setIsDeletingEvidencia] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [productoSearch, setProductoSearch] = useState<Record<string, string>>({});
+  const cantidadesOriginales = useMemo(() => {
+    if (!isUpdate) return new Map<string, number>();
+
+    return (initialData?.productos ?? []).reduce((acc, item) => {
+      if (!item.productoId) return acc;
+      const cantidad = Number(item.cantidad ?? 0);
+      acc.set(item.productoId, (acc.get(item.productoId) ?? 0) + (Number.isFinite(cantidad) ? cantidad : 0));
+      return acc;
+    }, new Map<string, number>());
+  }, [initialData?.productos, isUpdate]);
+
+  const getStockDisponible = (productoId?: string, currentIndex?: number) => {
+    const producto = productos.find((item) => item.id === productoId);
+    if (!producto) return 0;
+
+    const stockBase = producto.stock + (cantidadesOriginales.get(producto.id) ?? 0);
+    const cantidadMismoProductoEnOtrasLineas = (productosSeleccionados ?? []).reduce((total, item, index) => {
+      if (index === currentIndex || item?.productoId !== productoId) return total;
+      const cantidad = Number(item?.cantidad ?? 0);
+      return total + (Number.isFinite(cantidad) ? cantidad : 0);
+    }, 0);
+
+    return Math.max(stockBase - cantidadMismoProductoEnOtrasLineas, 0);
+  };
 
   useEffect(() => {
     form.setValue("total", Number(totalCalculado.toFixed(2)), { shouldValidate: true });
-  }, [totalCalculado, form]);
+    form.setValue("isv", Number(isvCalculado.toFixed(2)), { shouldValidate: true });
+  }, [isvCalculado, totalCalculado, form]);
+
+  useEffect(() => {
+    if (!conEnvio) form.setValue("envio", 0, { shouldValidate: true });
+  }, [conEnvio, form]);
 
   async function onSubmit(data: VentaFormOutput) {
     if (isSaving) return;
 
+    const productoSinStock = data.productos.find((item, index) => item.cantidad > getStockDisponible(item.productoId, index));
+    if (productoSinStock) {
+      const producto = productos.find((item) => item.id === productoSinStock.productoId);
+      toast.error(`No puedes vender más unidades de ${producto?.nombre ?? "un producto"} que las disponibles en inventario.`);
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const payload = { ...data, total: Number(totalCalculado.toFixed(2)) };
+      const payload = { ...data, total: Number(totalCalculado.toFixed(2)), isv: Number(isvCalculado.toFixed(2)), envio: data.conEnvio ? data.envio : 0 };
       if (isUpdate) {
         await updateVenta(payload);
         toast.success("Venta actualizada.");
@@ -145,7 +191,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 rounded-xl border bg-card p-4 shadow-sm md:p-6">
-      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
         <Controller name="clienteId" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid} className="max-w-sm">
             <FieldLabel>Cliente asignado</FieldLabel>
@@ -178,10 +224,53 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
           </Field>
         )} />
 
+        <Controller name="tipoDocumento" control={form.control} render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="max-w-[240px]">
+            <FieldLabel>Documento</FieldLabel>
+            <FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="RECIBO">Recibo</SelectItem><SelectItem value="FACTURA">Factura</SelectItem></SelectContent></Select></FieldContent>
+            <FieldDescription>Factura separa el 15% como ISV.</FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )} />
+
+        <Controller name="conEnvio" control={form.control} render={({ field, fieldState }) => (
+          <Field data-invalid={fieldState.invalid} className="max-w-[180px]">
+            <FieldLabel>¿Con envío?</FieldLabel>
+            <FieldContent><Select value={field.value ? "SI" : "NO"} onValueChange={(value) => field.onChange(value === "SI")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="NO">No</SelectItem><SelectItem value="SI">Sí</SelectItem></SelectContent></Select></FieldContent>
+            <FieldDescription>El envío lo paga el cliente.</FieldDescription>
+            {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+          </Field>
+        )} />
+
+        {Boolean(conEnvio) && (
+          <Controller name="envio" control={form.control} render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid} className="max-w-[180px]">
+              <FieldLabel>Envío</FieldLabel>
+              <FieldContent><Input type="number" min="0" step="0.01" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : 0} /></FieldContent>
+              <FieldDescription>Monto cobrado por envío.</FieldDescription>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )} />
+        )}
+      </div>
+
+      <div className="grid gap-5 md:grid-cols-3">
+        <Field className="max-w-[260px]">
+          <FieldLabel>Subtotal productos</FieldLabel>
+          <FieldContent><Input readOnly value={subtotalProductos.toFixed(2)} /></FieldContent>
+          <FieldDescription>Suma antes de separar ISV.</FieldDescription>
+        </Field>
+
+        <Field className="max-w-[260px]">
+          <FieldLabel>ISV</FieldLabel>
+          <FieldContent><Input readOnly value={isvCalculado.toFixed(2)} /></FieldContent>
+          <FieldDescription>15% separado cuando es factura.</FieldDescription>
+        </Field>
+
         <Field className="max-w-[260px]">
           <FieldLabel>Total de la venta</FieldLabel>
           <FieldContent><Input readOnly value={totalCalculado.toFixed(2)} /></FieldContent>
-          <FieldDescription>Suma automática de todos los productos y descuentos.</FieldDescription>
+          <FieldDescription>Total neto de venta; no incluye envío.</FieldDescription>
         </Field>
       </div>
 
@@ -264,7 +353,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
                           <ComboboxList>
                             {filteredProducts.map((producto) => (
                               <ComboboxItem key={producto.id} value={producto.id}>
-                                {producto.nombre} - {producto.descripcion}
+                                {producto.nombre} - {producto.descripcion} (stock: {producto.stock})
                               </ComboboxItem>
                             ))}
                           </ComboboxList>
@@ -279,13 +368,21 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
                 );
               }} />
 
-              <Controller name={`productos.${index}.cantidad`} control={form.control} render={({ field, fieldState }) => (
-                <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel>Cantidad</FieldLabel>
-                  <FieldContent><Input type="number" min="1" step="1" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : 1} /></FieldContent>
-                  {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
-                </Field>
-              )} />
+              <Controller name={`productos.${index}.cantidad`} control={form.control} render={({ field, fieldState }) => {
+                const stockDisponible = getStockDisponible(productosSeleccionados?.[index]?.productoId, index);
+                const cantidadActual = Number(field.value ?? 0);
+                const excedeStock = Number.isFinite(cantidadActual) && cantidadActual > stockDisponible;
+
+                return (
+                  <Field data-invalid={fieldState.invalid || excedeStock}>
+                    <FieldLabel>Cantidad</FieldLabel>
+                    <FieldContent><Input type="number" min="1" max={stockDisponible || 1} step="1" {...field} value={typeof field.value === "number" || typeof field.value === "string" ? field.value : 1} /></FieldContent>
+                    <FieldDescription>Disponible: {stockDisponible}</FieldDescription>
+                    {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+                    {excedeStock && <p className="text-sm text-destructive">No hay stock suficiente.</p>}
+                  </Field>
+                );
+              }} />
 
               <Controller name={`productos.${index}.precioUnitario`} control={form.control} render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>

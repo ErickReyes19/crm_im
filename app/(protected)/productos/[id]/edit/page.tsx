@@ -14,5 +14,5 @@ export default async function EditProductoPage({ params }: { params: Promise<{ i
   const producto = await getProductoById(id);
   if (!producto) redirect("/productos");
 
-  return <div><HeaderComponent Icon={Pencil} screenName="Editar producto" description="En este apartado podrás editar un producto" /><Formulario isUpdate initialData={{ id: producto.id, nombre: producto.nombre, descripcion: producto.descripcion, activo: producto.activo }} /></div>;
+  return <div><HeaderComponent Icon={Pencil} screenName="Editar producto" description="En este apartado podrás editar un producto" /><Formulario isUpdate initialData={{ id: producto.id, nombre: producto.nombre, descripcion: producto.descripcion, stock: producto.stock, stockMinimo: producto.stockMinimo, activo: producto.activo }} /></div>;
 }

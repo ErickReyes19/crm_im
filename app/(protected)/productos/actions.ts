@@ -24,7 +24,7 @@ export async function getProductoById(id?: string) {
 export async function getProductosOpciones() {
   return prisma.producto.findMany({
     where: { activo: true },
-    select: { id: true, nombre: true, descripcion: true },
+    select: { id: true, nombre: true, descripcion: true, stock: true, stockMinimo: true },
     orderBy: { nombre: "asc" },
   });
 }
@@ -38,6 +38,8 @@ export async function createProducto(data: Producto) {
     data: {
       nombre: data.nombre,
       descripcion: data.descripcion,
+      stock: data.stock,
+      stockMinimo: data.stockMinimo,
       activo: data.activo,
       creadoPorId: session.IdUser,
     },
@@ -59,6 +61,8 @@ export async function updateProducto(data: Producto) {
     data: {
       nombre: data.nombre,
       descripcion: data.descripcion,
+      stock: data.stock,
+      stockMinimo: data.stockMinimo,
       activo: data.activo,
     },
   });

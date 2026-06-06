@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { prisma } from "@/lib/prisma";
 import { Crown, MousePointerClick, UserRound, Users } from "lucide-react";
 import Link from "next/link";
+import { ReasignarVendedorForm } from "./ReasignarVendedorForm";
 
 type Search = Promise<{ adminId?: string; vendedorId?: string }>;
 type UsuarioJerarquia = {
@@ -40,6 +41,14 @@ async function getData(adminId?: string, vendedorId?: string) {
 
   const selectedAdminId = adminId && admins.some((a) => a.id === adminId) ? adminId : null;
   const selectedAdmin = selectedAdminId ? admins.find((admin) => admin.id === selectedAdminId) : null;
+
+  const vendedoresReasignables = await prisma.usuarios.findMany({
+    where: { activo: true, rol: { nombre: "VENDEDOR" } },
+    select: { id: true, usuario: true, nombre: true, adminPadreId: true },
+    orderBy: [{ nombre: "asc" }, { usuario: "asc" }],
+  });
+
+  const adminsReasignables = admins.map((admin) => ({ id: admin.id, usuario: admin.usuario, nombre: admin.nombre }));
 
   const vendedoresBase = selectedAdmin
     ? await prisma.usuarios.findMany({
@@ -80,7 +89,7 @@ async function getData(adminId?: string, vendedorId?: string) {
       })
     : [];
 
-  return { admins, selectedAdminId, vendedores, selectedVendedorId, clientes };
+  return { admins, selectedAdminId, vendedores, selectedVendedorId, clientes, vendedoresReasignables, adminsReasignables };
 }
 
 export default async function JerarquiaUsuariosPage({ searchParams }: { searchParams: Search }) {
@@ -88,7 +97,7 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
   if (!session?.Permiso?.includes("super_admin")) return <NoAcceso />;
 
   const params = await searchParams;
-  const { admins, selectedAdminId, vendedores, selectedVendedorId, clientes } = await getData(params.adminId, params.vendedorId);
+  const { admins, selectedAdminId, vendedores, selectedVendedorId, clientes, vendedoresReasignables, adminsReasignables } = await getData(params.adminId, params.vendedorId);
 
   return (
     <div className="container mx-auto py-2 space-y-4">
@@ -118,6 +127,16 @@ export default async function JerarquiaUsuariosPage({ searchParams }: { searchPa
               </Link>
             );
           })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" />Mover vendedor entre administradores</CardTitle>
+          <CardDescription>Como super admin puedes cambiar el administrador padre de cualquier vendedor activo.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ReasignarVendedorForm vendedores={vendedoresReasignables} admins={adminsReasignables} />
         </CardContent>
       </Card>
 

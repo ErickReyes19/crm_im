@@ -21,7 +21,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Venta
 
   const puedeEditar = permisos.includes("editar_venta");
   const showUserFilter = isSuperAdminSession(session!) || permisos.includes("gestionar_mi_equipo");
-  const data: VentaTableRow[] = (await getVentas({ from: dateRange.fromInput, to: dateRange.toInput })).map((venta: Awaited<ReturnType<typeof getVentas>>[number]) => ({ ...venta, canEditEstado: puedeEditar, total: Number(venta.total), usuarioFiltro: getUserDisplayName(venta.usuario), productos: venta.productos.map((detalle) => ({ ...detalle, precioUnitario: Number(detalle.precioUnitario), subtotal: Number(detalle.subtotal) })) }));
+  const data: VentaTableRow[] = (await getVentas({ from: dateRange.fromInput, to: dateRange.toInput })).map((venta: Awaited<ReturnType<typeof getVentas>>[number]) => ({ ...venta, canEditEstado: puedeEditar, total: Number(venta.total), isv: Number(venta.isv), envio: Number(venta.envio), usuarioFiltro: getUserDisplayName(venta.usuario), productos: venta.productos.map((detalle) => ({ ...detalle, precioUnitario: Number(detalle.precioUnitario), subtotal: Number(detalle.subtotal) })) }));
   const userFilter = { enabled: showUserFilter, placeholder: "Ver ventas por vendedor" };
 
   return (
