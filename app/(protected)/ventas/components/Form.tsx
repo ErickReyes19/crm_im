@@ -16,7 +16,9 @@ import { createVenta, updateVenta } from "../actions";
 import { TipoDocumentoVenta, TipoPrecioVenta, VentaFormValues, VentaSchema } from "../schema";
 
 type VentaFormOutput = z.output<typeof VentaSchema>;
-type ClienteOpcion = { id: string; nombre: string; apellido: string };
+type VentaFormValuesWithUsuario = VentaFormValues & { usuarioId?: string };
+type ClienteOpcion = { id: string; nombre: string; apellido: string; usuarioAsignadoId: string };
+type UsuarioOpcion = { id: string; usuario: string; nombre?: string | null };
 type ProductoOpcion = { id: string; nombre: string; descripcion: string; stock: number; stockMinimo: number };
 
 const descuentos: Array<{ value: TipoPrecioVenta; label: string }> = [
@@ -64,9 +66,17 @@ async function uploadImage(file: File, folder: "ventas") {
   return payload as UploadedImage;
 }
 
-export function Formulario({ isUpdate, initialData, clientes, productos }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; productos: ProductoOpcion[] }) {
+export function Formulario({ isUpdate, initialData, clientes, usuarios, currentUserId, productos }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; usuarios: UsuarioOpcion[]; currentUserId: string; productos: ProductoOpcion[] }) {
   const router = useRouter();
-  const form = useForm<VentaFormValues, unknown, VentaFormOutput>({ resolver: zodResolver(VentaSchema), defaultValues: initialData });
+  const clienteInicial = clientes.find((cliente) => cliente.id === initialData?.clienteId);
+  const defaultUsuarioId = clienteInicial?.usuarioAsignadoId ?? currentUserId ?? (usuarios.length === 1 ? usuarios[0].id : "");
+  const form = useForm<VentaFormValuesWithUsuario, unknown, VentaFormOutput>({
+    resolver: zodResolver(VentaSchema),
+    defaultValues: { ...initialData, usuarioId: defaultUsuarioId },
+  });
+  const showUsuarioSelect = usuarios.length > 1;
+  const selectedUsuarioId = useWatch({ control: form.control, name: "usuarioId" }) ?? defaultUsuarioId;
+  const clientesFiltrados = selectedUsuarioId ? clientes.filter((cliente) => cliente.usuarioAsignadoId === selectedUsuarioId) : [];
   const { fields, append, remove } = useFieldArray({ control: form.control, name: "productos" });
   const productosSeleccionados = useWatch({ control: form.control, name: "productos" });
   const metodoPago = useWatch({ control: form.control, name: "metodoPago" });
@@ -113,10 +123,20 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
     if (!conEnvio) form.setValue("envio", 0, { shouldValidate: true });
   }, [conEnvio, form]);
 
-  async function onSubmit(data: VentaFormOutput) {
+  useEffect(() => {
+    const currentClienteId = form.getValues("clienteId");
+    if (!selectedUsuarioId || !currentClienteId) return;
+    const currentCliente = clientes.find((cliente) => cliente.id === currentClienteId);
+    if (currentCliente?.usuarioAsignadoId !== selectedUsuarioId) {
+      form.setValue("clienteId", "", { shouldValidate: true, shouldDirty: true });
+    }
+  }, [selectedUsuarioId, clientes, form]);
+
+  async function onSubmit(data: VentaFormValuesWithUsuario) {
     if (isSaving) return;
 
-    const productoSinStock = data.productos.find((item, index) => item.cantidad > getStockDisponible(item.productoId, index));
+    const ventaData = Object.fromEntries(Object.entries(data).filter(([key]) => key !== "usuarioId")) as VentaFormOutput;
+    const productoSinStock = ventaData.productos.find((item, index) => item.cantidad > getStockDisponible(item.productoId, index));
     if (productoSinStock) {
       const producto = productos.find((item) => item.id === productoSinStock.productoId);
       toast.error(`No puedes vender más unidades de ${producto?.nombre ?? "un producto"} que las disponibles en inventario.`);
@@ -125,7 +145,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
     setIsSaving(true);
     try {
-      const payload = { ...data, total: Number(totalCalculado.toFixed(2)), isv: Number(isvCalculado.toFixed(2)), envio: data.conEnvio ? data.envio : 0 };
+      const payload = { ...ventaData, total: Number(totalCalculado.toFixed(2)), isv: Number(isvCalculado.toFixed(2)), envio: ventaData.conEnvio ? ventaData.envio : 0 };
       if (isUpdate) {
         await updateVenta(payload);
         toast.success("Venta actualizada.");
@@ -192,16 +212,35 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 rounded-xl border bg-card p-4 shadow-sm md:p-6">
       <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-6">
+        {showUsuarioSelect && (
+          <Controller name="usuarioId" control={form.control} render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid} className="max-w-sm">
+              <FieldLabel>Usuario</FieldLabel>
+              <FieldContent>
+                <Select value={field.value} onValueChange={field.onChange} disabled={isUpdate || usuarios.length === 0}>
+                  <SelectTrigger><SelectValue placeholder="Selecciona usuario" /></SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map((usuario) => (
+                      <SelectItem key={usuario.id} value={usuario.id}>{usuario.nombre?.trim() ? `${usuario.nombre} (${usuario.usuario})` : usuario.usuario}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FieldContent>
+              {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )} />
+        )}
+
         <Controller name="clienteId" control={form.control} render={({ field, fieldState }) => (
           <Field data-invalid={fieldState.invalid} className="max-w-sm">
             <FieldLabel>Cliente asignado</FieldLabel>
             <FieldContent>
-              <Select value={field.value} onValueChange={field.onChange} disabled={clientes.length === 0}>
-                <SelectTrigger><SelectValue placeholder={clientes.length === 0 ? "No tienes clientes asignados" : "Selecciona cliente"} /></SelectTrigger>
-                <SelectContent>{clientes.map((cliente) => <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre} {cliente.apellido}</SelectItem>)}</SelectContent>
+              <Select value={field.value} onValueChange={field.onChange} disabled={isUpdate || (usuarios.length > 1 && !selectedUsuarioId) || clientesFiltrados.length === 0}>
+                <SelectTrigger><SelectValue placeholder={usuarios.length > 1 && !selectedUsuarioId ? "Selecciona usuario primero" : clientesFiltrados.length === 0 ? "No hay clientes asignados" : "Selecciona cliente"} /></SelectTrigger>
+                <SelectContent>{clientesFiltrados.map((cliente) => <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre} {cliente.apellido}</SelectItem>)}</SelectContent>
               </Select>
             </FieldContent>
-            <FieldDescription>Solo aparecen los clientes asignados a tu usuario.</FieldDescription>
+            <FieldDescription>Solo aparecen los clientes del usuario seleccionado.</FieldDescription>
             {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
           </Field>
         )} />
@@ -413,7 +452,7 @@ export function Formulario({ isUpdate, initialData, clientes, productos }: { isU
 
       <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:justify-end">
         <Button type="button" variant="outline" onClick={() => router.push("/ventas")}>Cancelar</Button>
-        <Button type="submit" disabled={isSaving || form.formState.isSubmitting || cargandoEvidencia || clientes.length === 0 || productos.length === 0}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
+        <Button type="submit" disabled={isSaving || form.formState.isSubmitting || cargandoEvidencia || clientesFiltrados.length === 0 || productos.length === 0}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
       </div>
     </form>
   );

@@ -85,13 +85,14 @@ async function assertVentaAccesible(ventaId: string, session: Awaited<ReturnType
   if (!venta) throw new Error("No tienes acceso a esta venta");
 }
 
-async function assertClienteAsignado(clienteId: string, usuarioId: string) {
+async function assertClienteAccesible(clienteId: string, session: Awaited<ReturnType<typeof getCurrentUser>>) {
+  const scopedUserIds = await getScopedUserIds(session);
   const cliente = await prisma.cliente.findFirst({
-    where: { id: clienteId, usuarioAsignadoId: usuarioId },
+    where: { id: clienteId, usuarioAsignadoId: { in: scopedUserIds } },
     select: { id: true },
   });
 
-  if (!cliente) throw new Error("El cliente seleccionado no está asignado a tu usuario");
+  if (!cliente) throw new Error("No tienes acceso al cliente seleccionado");
 }
 
 async function buildVentaProductos(productos: Venta["productos"]) {
@@ -154,7 +155,7 @@ async function aplicarMovimientoInventario(tx: Prisma.TransactionClient, cantida
 
 export async function createVenta(data: Venta) {
   const session = await getCurrentUser();
-  await assertClienteAsignado(data.clienteId, session.IdUser);
+  await assertClienteAccesible(data.clienteId, session);
   const { detalles, subtotalProductos } = await buildVentaProductos(data.productos);
   const { total, isv } = calcularTotalesVenta(subtotalProductos, data.tipoDocumento);
   const venta = await prisma.$transaction(async (tx) => {
@@ -189,7 +190,7 @@ export async function updateVenta(data: Venta) {
 
   const session = await getCurrentUser();
   await assertVentaAccesible(data.id, session);
-  await assertClienteAsignado(data.clienteId, session.IdUser);
+  await assertClienteAccesible(data.clienteId, session);
   const { detalles, subtotalProductos } = await buildVentaProductos(data.productos);
   const { total, isv } = calcularTotalesVenta(subtotalProductos, data.tipoDocumento);
   const venta = await prisma.$transaction(async (tx) => {

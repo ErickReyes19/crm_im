@@ -111,10 +111,10 @@ export async function getUsuarioById(id: string): Promise<Usuario | null> {
   return { id: r.id, usuario: r.usuario, rol: r.rol?.nombre ?? "", rol_id: r.rol_id, email: r.email, nombre: r.nombre ?? "", fotoUrl: r.fotoUrl ?? "", telefono: r.telefono ?? "", ciudad: r.ciudad ?? "", direccion: r.direccion ?? "", activo: r.activo };
 }
 
-export async function getUsuariosOpciones(): Promise<Array<{ id: string; usuario: string }>> {
+export async function getUsuariosOpciones(): Promise<Array<{ id: string; usuario: string; nombre: string | null }>> {
   const session = await requireSession();
   const scopedIds = await getScopedUserIds(session);
-  return prisma.usuarios.findMany({ where: { id: { in: scopedIds } }, select: { id: true, usuario: true }, orderBy: { usuario: "asc" } });
+  return prisma.usuarios.findMany({ where: { id: { in: scopedIds } }, select: { id: true, usuario: true, nombre: true }, orderBy: { usuario: "asc" } });
 }
 
 export async function reasignarVendedorAdministrador(vendedorId: string, adminDestinoId: string) {

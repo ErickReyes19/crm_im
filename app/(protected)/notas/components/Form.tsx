@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -17,7 +17,10 @@ import { createNota, updateNota } from "../actions";
 import { NotaFormValues, NotaSchema } from "../schema";
 
 type NotaFormOutput = z.output<typeof NotaSchema>;
+type NotaFormValuesWithUsuario = NotaFormValues & { usuarioId?: string };
 type UploadedImage = NotaFormOutput["evidencias"][number] & { url?: string };
+type ClienteOption = { id: string; nombre: string; apellido: string; usuarioAsignadoId: string };
+type UsuarioOption = { id: string; usuario: string; nombre?: string | null };
 
 function mediaUrl(ubicacion: string) {
   return `/api/media/${ubicacion}`;
@@ -33,23 +36,46 @@ async function uploadImage(file: File) {
   return payload as UploadedImage;
 }
 
-export function Formulario({ clientes, initialData, isUpdate = false }: { clientes: Array<{ id: string; nombre: string; apellido: string }>; initialData?: Partial<NotaFormOutput>; isUpdate?: boolean }) {
+export function Formulario({ clientes, usuarios, currentUserId, initialData, isUpdate = false }: { clientes: ClienteOption[]; usuarios: UsuarioOption[]; currentUserId: string; initialData?: Partial<NotaFormOutput>; isUpdate?: boolean }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const form = useForm<NotaFormValues, unknown, NotaFormOutput>({
+
+  const clienteInicial = clientes.find((cliente) => cliente.id === initialData?.clienteId);
+  const defaultUsuarioId = clienteInicial?.usuarioAsignadoId ?? currentUserId ?? (usuarios.length === 1 ? usuarios[0].id : "");
+  const form = useForm<NotaFormValuesWithUsuario, unknown, NotaFormOutput>({
     resolver: zodResolver(NotaSchema),
-    defaultValues: { id: initialData?.id, clienteId: initialData?.clienteId ?? "", contenido: initialData?.contenido ?? "", evidencias: initialData?.evidencias ?? [] },
+    defaultValues: {
+      id: initialData?.id,
+      usuarioId: defaultUsuarioId,
+      clienteId: initialData?.clienteId ?? "",
+      contenido: initialData?.contenido ?? "",
+      evidencias: initialData?.evidencias ?? [],
+    },
   });
 
-  async function onSubmit(data: NotaFormOutput) {
+  const showUsuarioSelect = usuarios.length > 1;
+  const selectedUsuarioId = useWatch({ control: form.control, name: "usuarioId" }) ?? defaultUsuarioId;
+  const clientesFiltrados = selectedUsuarioId ? clientes.filter((cliente) => cliente.usuarioAsignadoId === selectedUsuarioId) : [];
+
+  useEffect(() => {
+    const currentClienteId = form.getValues("clienteId");
+    if (!selectedUsuarioId || !currentClienteId) return;
+    const currentCliente = clientes.find((cliente) => cliente.id === currentClienteId);
+    if (currentCliente?.usuarioAsignadoId !== selectedUsuarioId) {
+      form.setValue("clienteId", "", { shouldValidate: true, shouldDirty: true });
+    }
+  }, [selectedUsuarioId, clientes, form]);
+
+  async function onSubmit(data: NotaFormValuesWithUsuario) {
     if (isSaving || isUploading) return;
 
+    const notaData = Object.fromEntries(Object.entries(data).filter(([key]) => key !== "usuarioId")) as NotaFormOutput;
     setIsSaving(true);
     try {
-      if (isUpdate) await updateNota(data);
-      else await createNota(data);
+      if (isUpdate) await updateNota(notaData);
+      else await createNota(notaData);
       toast.success(isUpdate ? "Nota actualizada." : "Nota creada.");
       router.push("/notas");
       router.refresh();
@@ -110,8 +136,36 @@ export function Formulario({ clientes, initialData, isUpdate = false }: { client
   const evidencias = useWatch({ control: form.control, name: "evidencias" }) ?? [];
 
   return <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 rounded-xl border bg-card p-4 shadow-sm md:p-6">
+    {showUsuarioSelect && (
+      <Controller name="usuarioId" control={form.control} render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel>Usuario</FieldLabel>
+          <FieldContent>
+            <Select value={field.value} onValueChange={field.onChange} disabled={isUpdate || usuarios.length === 0}>
+              <SelectTrigger><SelectValue placeholder="Selecciona usuario" /></SelectTrigger>
+              <SelectContent>
+                {usuarios.map((usuario) => (
+                  <SelectItem key={usuario.id} value={usuario.id}>{usuario.nombre?.trim() ? `${usuario.nombre} (${usuario.usuario})` : usuario.usuario}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FieldContent>
+          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+        </Field>
+      )} />)}
     <Controller name="clienteId" control={form.control} render={({ field, fieldState }) => (
-      <Field data-invalid={fieldState.invalid}><FieldLabel>Cliente</FieldLabel><FieldContent><Select value={field.value} onValueChange={field.onChange} disabled={isUpdate}><SelectTrigger><SelectValue placeholder="Selecciona cliente" /></SelectTrigger><SelectContent>{clientes.map((c) => <SelectItem key={c.id} value={c.id}>{c.nombre} {c.apellido}</SelectItem>)}</SelectContent></Select></FieldContent>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Field>
+      <Field data-invalid={fieldState.invalid}>
+        <FieldLabel>Cliente</FieldLabel>
+        <FieldContent>
+          <Select value={field.value} onValueChange={field.onChange} disabled={isUpdate || (usuarios.length > 1 && !selectedUsuarioId)}>
+            <SelectTrigger><SelectValue placeholder={usuarios.length > 1 ? "Selecciona usuario primero" : "Selecciona cliente"} /></SelectTrigger>
+            <SelectContent>
+              {clientesFiltrados.map((c) => <SelectItem key={c.id} value={c.id}>{c.nombre} {c.apellido}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </FieldContent>
+        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+      </Field>
     )} />
 
     <Controller name="contenido" control={form.control} render={({ field, fieldState }) => (

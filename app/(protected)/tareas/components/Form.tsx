@@ -9,27 +9,32 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { createTarea, getNotasOpcionesByCliente, updateTarea } from "../actions";
 import { TareaFormValues, TareaSchema } from "../schema";
 
 type TareaFormOutput = z.output<typeof TareaSchema>;
-type ClienteOption = { id: string; nombre: string; apellido: string };
+type TareaFormValuesWithUsuario = TareaFormValues & { usuarioId?: string };
+type ClienteOption = { id: string; nombre: string; apellido: string; usuarioAsignadoId: string };
+type UsuarioOption = { id: string; usuario: string; nombre?: string | null };
 type NotaOption = { id: string; contenido: string; clienteId: string; cliente: { nombre: string; apellido: string } };
 type TareaInitialData = Partial<TareaFormOutput> & { clienteId?: string };
 
-export function Formulario({ clientes, notasIniciales = [], initialData, isUpdate = false }: { clientes: ClienteOption[]; notasIniciales?: NotaOption[]; initialData?: TareaInitialData; isUpdate?: boolean }) {
+export function Formulario({ clientes, usuarios, currentUserId, notasIniciales = [], initialData, isUpdate = false }: { clientes: ClienteOption[]; usuarios: UsuarioOption[]; currentUserId: string; notasIniciales?: NotaOption[]; initialData?: TareaInitialData; isUpdate?: boolean }) {
   const router = useRouter();
+  const clienteInicial = clientes.find((cliente) => cliente.id === initialData?.clienteId);
+  const defaultUsuarioId = clienteInicial?.usuarioAsignadoId ?? currentUserId ?? (usuarios.length === 1 ? usuarios[0].id : "");
   const [clienteId, setClienteId] = useState(initialData?.clienteId ?? "");
   const [notas, setNotas] = useState<NotaOption[]>(notasIniciales);
   const [isSaving, setIsSaving] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const form = useForm<TareaFormValues, unknown, TareaFormOutput>({
+  const form = useForm<TareaFormValuesWithUsuario, unknown, TareaFormOutput>({
     resolver: zodResolver(TareaSchema),
     defaultValues: {
       id: initialData?.id,
+      usuarioId: defaultUsuarioId,
       notaId: initialData?.notaId ?? "",
       titulo: initialData?.titulo ?? "",
       descripcion: initialData?.descripcion ?? "",
@@ -37,6 +42,20 @@ export function Formulario({ clientes, notasIniciales = [], initialData, isUpdat
       estado: initialData?.estado ?? "PENDIENTE",
     },
   });
+
+  const showUsuarioSelect = usuarios.length > 1;
+  const selectedUsuarioId = useWatch({ control: form.control, name: "usuarioId" }) ?? defaultUsuarioId;
+  const clientesFiltrados = selectedUsuarioId ? clientes.filter((cliente) => cliente.usuarioAsignadoId === selectedUsuarioId) : [];
+
+  useEffect(() => {
+    if (!selectedUsuarioId || !clienteId) return;
+    const currentCliente = clientes.find((cliente) => cliente.id === clienteId);
+    if (currentCliente?.usuarioAsignadoId !== selectedUsuarioId) {
+      setClienteId("");
+      setNotas([]);
+      form.setValue("notaId", "", { shouldValidate: true });
+    }
+  }, [selectedUsuarioId, clienteId, clientes, form]);
 
   useEffect(() => {
     if (!clienteId) return;
@@ -79,12 +98,40 @@ export function Formulario({ clientes, notasIniciales = [], initialData, isUpdat
   }
 
   return <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 rounded-xl border bg-card p-4 shadow-sm md:p-6">
+    {showUsuarioSelect && (
+      <Controller name="usuarioId" control={form.control} render={({ field, fieldState }) => (
+        <Field data-invalid={fieldState.invalid}>
+          <FieldLabel>Usuario</FieldLabel>
+          <FieldContent>
+            <Select
+              value={field.value}
+              onValueChange={(value) => {
+                field.onChange(value);
+                setClienteId("");
+                setNotas([]);
+                form.setValue("notaId", "", { shouldValidate: true });
+              }}
+              disabled={isUpdate || usuarios.length === 0}
+            >
+              <SelectTrigger><SelectValue placeholder="Selecciona usuario" /></SelectTrigger>
+              <SelectContent>
+                {usuarios.map((usuario) => (
+                  <SelectItem key={usuario.id} value={usuario.id}>{usuario.nombre?.trim() ? `${usuario.nombre} (${usuario.usuario})` : usuario.usuario}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FieldContent>
+          {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+        </Field>
+      )} />
+    )}
+
     <Field>
       <FieldLabel>Cliente</FieldLabel>
       <FieldContent>
-        <Select value={clienteId} onValueChange={handleClienteChange}>
-          <SelectTrigger><SelectValue placeholder="Selecciona un cliente" /></SelectTrigger>
-          <SelectContent>{clientes.map((cliente) => <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre} {cliente.apellido}</SelectItem>)}</SelectContent>
+        <Select value={clienteId} onValueChange={handleClienteChange} disabled={isUpdate || (usuarios.length > 1 && !selectedUsuarioId) || clientesFiltrados.length === 0}>
+          <SelectTrigger><SelectValue placeholder={usuarios.length > 1 && !selectedUsuarioId ? "Selecciona usuario primero" : clientesFiltrados.length === 0 ? "No hay clientes con notas" : "Selecciona un cliente"} /></SelectTrigger>
+          <SelectContent>{clientesFiltrados.map((cliente) => <SelectItem key={cliente.id} value={cliente.id}>{cliente.nombre} {cliente.apellido}</SelectItem>)}</SelectContent>
         </Select>
       </FieldContent>
       <FieldDescription>Primero selecciona el cliente para cargar solo sus notas visibles.</FieldDescription>

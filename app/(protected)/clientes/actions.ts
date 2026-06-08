@@ -138,7 +138,7 @@ export async function getClientesOpciones() {
   if (!session?.IdUser) throw new Error("Sesión requerida");
   const scopedUserIds = await getScopedUserIds(session);
   return prisma.cliente.findMany({
-    select: { id: true, nombre: true, apellido: true },
+    select: { id: true, nombre: true, apellido: true, usuarioAsignadoId: true },
     where: { activo: true, usuarioAsignadoId: { in: scopedUserIds } },
     orderBy: { nombre: "asc" },
   });

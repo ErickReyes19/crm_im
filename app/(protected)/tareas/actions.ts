@@ -33,7 +33,7 @@ export async function getClientesConNotasOpciones() {
       usuarioAsignadoId: { in: scopedUserIds },
       notas: { some: {} },
     },
-    select: { id: true, nombre: true, apellido: true },
+    select: { id: true, nombre: true, apellido: true, usuarioAsignadoId: true },
     orderBy: [{ nombre: "asc" }, { apellido: "asc" }],
   });
 }
