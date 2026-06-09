@@ -66,8 +66,9 @@ async function uploadImage(file: File, folder: "ventas") {
   return payload as UploadedImage;
 }
 
-export function Formulario({ isUpdate, initialData, clientes, usuarios, currentUserId, productos }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; usuarios: UsuarioOpcion[]; currentUserId: string; productos: ProductoOpcion[] }) {
+export function Formulario({ isUpdate, initialData, clientes, usuarios, currentUserId, productos, returnTo }: { isUpdate: boolean; initialData?: VentaFormValues; clientes: ClienteOpcion[]; usuarios: UsuarioOpcion[]; currentUserId: string; productos: ProductoOpcion[]; returnTo?: string }) {
   const router = useRouter();
+  const cancelPath = returnTo || "/ventas";
   const clienteInicial = clientes.find((cliente) => cliente.id === initialData?.clienteId);
   const defaultUsuarioId = clienteInicial?.usuarioAsignadoId ?? currentUserId ?? (usuarios.length === 1 ? usuarios[0].id : "");
   const form = useForm<VentaFormValuesWithUsuario, unknown, VentaFormOutput>({
@@ -153,7 +154,7 @@ export function Formulario({ isUpdate, initialData, clientes, usuarios, currentU
         await createVenta(payload);
         toast.success("Venta creada.");
       }
-      router.push("/ventas");
+      router.push(cancelPath);
       router.refresh();
     } catch (error) {
       setIsSaving(false);
@@ -451,7 +452,7 @@ export function Formulario({ isUpdate, initialData, clientes, usuarios, currentU
       </div>
 
       <div className="flex flex-col gap-3 border-t pt-5 sm:flex-row sm:justify-end">
-        <Button type="button" variant="outline" onClick={() => router.push("/ventas")}>Cancelar</Button>
+        <Button type="button" variant="outline" onClick={() => router.push(cancelPath)}>Cancelar</Button>
         <Button type="submit" disabled={isSaving || form.formState.isSubmitting || cargandoEvidencia || clientesFiltrados.length === 0 || productos.length === 0}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button>
       </div>
     </form>

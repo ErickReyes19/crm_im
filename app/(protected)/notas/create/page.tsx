@@ -6,16 +6,23 @@ import NoAcceso from "@/components/noAccess";
 import { PlusCircle } from "lucide-react";
 import { Formulario } from "../components/Form";
 
-export default async function CreateNotaPage({ searchParams }: { searchParams: Promise<{ clienteId?: string }> }) {
+export default async function CreateNotaPage({ searchParams }: { searchParams: Promise<{ clienteId?: string; returnTo?: string }> }) {
   const permisos = await getSessionPermisos();
   if (!permisos?.includes("crear_notas")) return <NoAcceso />;
 
   const session = await getSession();
   const [usuarios, clientes] = await Promise.all([getUsuariosOpciones(), getClientesOpciones()]);
-  const { clienteId } = await searchParams;
+  const { clienteId, returnTo } = await searchParams;
 
   return <div className="container mx-auto py-2 space-y-4">
     <HeaderComponent Icon={PlusCircle} description="Agrega una nota al cliente con evidencia en S3" screenName="Crear nota" />
-    <Formulario usuarios={usuarios} clientes={clientes} currentUserId={session?.IdUser ?? ""} initialData={{ clienteId }} />
+    <Formulario
+      usuarios={usuarios}
+      clientes={clientes}
+      currentUserId={session?.IdUser ?? ""}
+      initialData={{ clienteId }}
+      returnTo={returnTo}
+      canCreateTarea={permisos.includes("crear_tarea")}
+    />
   </div>;
 }

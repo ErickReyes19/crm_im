@@ -56,6 +56,32 @@ export async function getNotasOpcionesByCliente(clienteId: string) {
   });
 }
 
+export async function getTareasByClienteId(clienteId: string) {
+  if (!clienteId) return [];
+
+  const session = await getCurrentUser();
+  const scopedUserIds = await getScopedUserIds(session);
+  const cliente = await prisma.cliente.findFirst({
+    where: { id: clienteId, usuarioAsignadoId: { in: scopedUserIds } },
+    select: { id: true },
+  });
+  if (!cliente) return [];
+
+  const tareaScopeWhere = await getTareaScopeWhere(session);
+
+  return prisma.tarea.findMany({
+    where: {
+      ...tareaScopeWhere,
+      nota: { clienteId },
+    },
+    include: {
+      nota: { select: { id: true, contenido: true } },
+      usuario: { select: { id: true, usuario: true, nombre: true } },
+    },
+    orderBy: [{ createAt: "asc" }],
+  });
+}
+
 export async function getTareas(range?: ListDateRangeInput) {
   const session = await getCurrentUser();
   const tareaScopeWhere = await getTareaScopeWhere(session);
@@ -64,7 +90,7 @@ export async function getTareas(range?: ListDateRangeInput) {
   return prisma.tarea.findMany({
     where: { ...tareaScopeWhere, fechaObjetivo: { gte: dateRange.from, lt: dateRange.toExclusive } },
     include: {
-      nota: { include: { cliente: { select: { nombre: true, apellido: true } } } },
+      nota: { include: { cliente: { select: { nombre: true, apellido: true, ciudad: true, numero: true } } } },
       usuario: { select: { id: true, usuario: true, nombre: true } },
     },
     orderBy: [{ usuario: { usuario: "asc" } }, { fechaObjetivo: "asc" }],
@@ -94,8 +120,14 @@ export async function createTarea(data: Tarea) {
   const session = await getCurrentUser();
   await assertNotaInScope(data.notaId);
 
+  const nota = await prisma.nota.findFirst({
+    where: { id: data.notaId },
+    select: { clienteId: true },
+  });
+
   await prisma.tarea.create({ data: { ...data, usuarioId: session.IdUser } });
   revalidatePath("/tareas");
+  if (nota?.clienteId) revalidatePath(`/clientes/${nota.clienteId}/profile`);
 }
 
 export async function updateTarea(data: Tarea) {
@@ -108,6 +140,8 @@ export async function updateTarea(data: Tarea) {
 
   await prisma.tarea.update({ where: { id: data.id }, data: { notaId: data.notaId, titulo: data.titulo, descripcion: data.descripcion, fechaObjetivo: data.fechaObjetivo, estado: data.estado } });
   revalidatePath("/tareas");
+  const nota = await prisma.nota.findFirst({ where: { id: data.notaId }, select: { clienteId: true } });
+  if (nota?.clienteId) revalidatePath(`/clientes/${nota.clienteId}/profile`);
 }
 
 export async function cambiarEstadoTarea(id: string, estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA") {

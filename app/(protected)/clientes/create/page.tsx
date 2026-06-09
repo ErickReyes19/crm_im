@@ -22,7 +22,12 @@ export default async function CreateClientePage() {
   return (
     <div>
       <HeaderComponent Icon={PlusCircle} screenName="Crear cliente" description="Registra un cliente. La asignación inicial será tu usuario automáticamente." />
-      <Formulario isUpdate={false} initialData={initialData} />
+      <Formulario
+        isUpdate={false}
+        initialData={initialData}
+        canCreateNota={permisos.includes("crear_notas")}
+        canCreateTarea={permisos.includes("crear_tarea")}
+      />
     </div>
   );
 }

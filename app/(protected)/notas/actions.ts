@@ -20,8 +20,29 @@ export async function getNotas(range?: ListDateRangeInput) {
 
   return prisma.nota.findMany({
     where: { cliente: { usuarioAsignadoId: { in: scopedUserIds } }, createAt: { gte: dateRange.from, lt: dateRange.toExclusive } },
-    include: { cliente: { select: { id: true, nombre: true, apellido: true } }, usuario: { select: { id: true, usuario: true, nombre: true } }, evidencias: true },
+    include: { cliente: { select: { id: true, nombre: true, apellido: true, ciudad: true, numero: true } }, usuario: { select: { id: true, usuario: true, nombre: true } }, evidencias: true },
     orderBy: { createAt: "desc" },
+  });
+}
+
+export async function getNotasByClienteId(clienteId: string) {
+  if (!clienteId) return [];
+
+  const session = await getCurrentUser();
+  const scopedUserIds = await getScopedUserIds(session);
+  const cliente = await prisma.cliente.findFirst({
+    where: { id: clienteId, usuarioAsignadoId: { in: scopedUserIds } },
+    select: { id: true },
+  });
+  if (!cliente) return [];
+
+  return prisma.nota.findMany({
+    where: { clienteId, cliente: { usuarioAsignadoId: { in: scopedUserIds } } },
+    include: {
+      usuario: { select: { id: true, usuario: true, nombre: true } },
+      evidencias: true,
+    },
+    orderBy: { createAt: "asc" },
   });
 }
 
@@ -47,6 +68,7 @@ export async function createNota(data: Nota) {
 
   const nota = await prisma.nota.create({ data: { clienteId: data.clienteId, usuarioId: session.IdUser, contenido: data.contenido, evidencias: { create: (data.evidencias ?? []).map((evidencia) => ({ ubicacion: evidencia.ubicacion, nombre: evidencia.nombre })) } } });
   revalidatePath("/notas");
+  revalidatePath(`/clientes/${data.clienteId}/profile`);
   return nota;
 }
 

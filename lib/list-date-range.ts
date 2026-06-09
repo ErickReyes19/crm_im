@@ -3,7 +3,7 @@ import { fromZonedTime } from "date-fns-tz";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-export type DateRangePreset = "today" | "week" | "month";
+export type DateRangePreset = "today" | "week" | "month" | "30days";
 
 export type ListDateRangeInput = {
   from?: string;
@@ -73,6 +73,12 @@ export function getDateRangePresetInputs(preset: DateRangePreset, now = new Date
     const nextMonthFirstDay = inputToUtcDate(toInputFromParts(nextMonthYear, nextMonth, 1));
     const lastDay = addDays(nextMonthFirstDay, -1);
     return { from: toInputDate(firstDay), to: toInputDate(lastDay) };
+  }
+
+  if (preset === "30days") {
+    const todayInput = toInputDate(today);
+    const fromDay = addDays(today, -29);
+    return { from: toInputDate(fromDay), to: todayInput };
   }
 
   const weekday = getHondurasWeekday(today);

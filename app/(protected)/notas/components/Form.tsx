@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 "use client";
 
+import { defaultTareaInlineValues, InlineTareaSection, type TareaInlineValues } from "@/app/(protected)/components/inline-tarea-section";
+import { createTarea } from "@/app/(protected)/tareas/actions";
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -36,11 +38,14 @@ async function uploadImage(file: File) {
   return payload as UploadedImage;
 }
 
-export function Formulario({ clientes, usuarios, currentUserId, initialData, isUpdate = false }: { clientes: ClienteOption[]; usuarios: UsuarioOption[]; currentUserId: string; initialData?: Partial<NotaFormOutput>; isUpdate?: boolean }) {
+export function Formulario({ clientes, usuarios, currentUserId, initialData, isUpdate = false, returnTo, canCreateTarea = false }: { clientes: ClienteOption[]; usuarios: UsuarioOption[]; currentUserId: string; initialData?: Partial<NotaFormOutput>; isUpdate?: boolean; returnTo?: string; canCreateTarea?: boolean }) {
   const router = useRouter();
+  const cancelPath = returnTo || "/notas";
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [agregarTarea, setAgregarTarea] = useState(false);
+  const [tareaValues, setTareaValues] = useState<TareaInlineValues>(defaultTareaInlineValues);
 
   const clienteInicial = clientes.find((cliente) => cliente.id === initialData?.clienteId);
   const defaultUsuarioId = clienteInicial?.usuarioAsignadoId ?? currentUserId ?? (usuarios.length === 1 ? usuarios[0].id : "");
@@ -71,13 +76,33 @@ export function Formulario({ clientes, usuarios, currentUserId, initialData, isU
   async function onSubmit(data: NotaFormValuesWithUsuario) {
     if (isSaving || isUploading) return;
 
+    if (!isUpdate && agregarTarea && !tareaValues.titulo.trim()) {
+      toast.error("Si agregas una tarea, el título es requerido.");
+      return;
+    }
+
     const notaData = Object.fromEntries(Object.entries(data).filter(([key]) => key !== "usuarioId")) as NotaFormOutput;
     setIsSaving(true);
     try {
-      if (isUpdate) await updateNota(notaData);
-      else await createNota(notaData);
-      toast.success(isUpdate ? "Nota actualizada." : "Nota creada.");
-      router.push("/notas");
+      if (isUpdate) {
+        await updateNota(notaData);
+        toast.success("Nota actualizada.");
+      } else {
+        const nota = await createNota(notaData);
+        if (agregarTarea && tareaValues.titulo.trim()) {
+          await createTarea({
+            notaId: nota.id,
+            titulo: tareaValues.titulo.trim(),
+            descripcion: tareaValues.descripcion.trim() || undefined,
+            fechaObjetivo: tareaValues.fechaObjetivo,
+            estado: tareaValues.estado,
+          });
+          toast.success("Nota y tarea creadas.");
+        } else {
+          toast.success("Nota creada.");
+        }
+      }
+      router.push(cancelPath);
       router.refresh();
     } catch (error) {
       setIsSaving(false);
@@ -184,6 +209,17 @@ export function Formulario({ clientes, usuarios, currentUserId, initialData, isU
       ))}
     </div>
 
-    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.push("/notas")}>Cancelar</Button><Button type="submit" disabled={isSaving || isUploading || form.formState.isSubmitting}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUploading ? "Subiendo..." : isUpdate ? "Actualizar" : "Crear"}</Button></div>
+    {!isUpdate && canCreateTarea && (
+      <InlineTareaSection
+        enabled={agregarTarea}
+        onEnabledChange={setAgregarTarea}
+        values={tareaValues}
+        onChange={setTareaValues}
+        disabled={isSaving || isUploading}
+        description="La tarea quedará vinculada a la nota que estás creando."
+      />
+    )}
+
+    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.push(cancelPath)}>Cancelar</Button><Button type="submit" disabled={isSaving || isUploading || form.formState.isSubmitting}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUploading ? "Subiendo..." : isUpdate ? "Actualizar" : "Crear"}</Button></div>
   </form>;
 }

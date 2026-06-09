@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { rowMatchesTableSearch } from "@/lib/cliente-search";
 import { ColumnDef, ColumnFiltersState, flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, SortingState, useReactTable } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import Link from "next/link";
@@ -52,14 +53,14 @@ export function DataTable<TData, TValue>({ columns, data, userFilter }: DataTabl
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     state: { sorting, columnFilters, globalFilter },
-    globalFilterFn: (row) => Object.values(row.original as Record<string, unknown>).some((value) => String(value).toLowerCase().includes(globalFilter.toLowerCase())),
+    globalFilterFn: (row, _columnId, filterValue) => rowMatchesTableSearch(row.original as Record<string, unknown>, String(filterValue)),
   });
 
   return (
     <div className="rounded-md border p-4">
       <div className="flex flex-col items-center justify-between gap-3 py-4 md:flex-row">
         <div className="flex w-full flex-col gap-3 md:flex-row">
-          <Input placeholder="Filtrar ventas" value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="w-full md:max-w-sm" />
+          <Input placeholder="Filtrar por nombre, teléfono o ciudad" value={globalFilter} onChange={(event) => setGlobalFilter(event.target.value)} className="w-full md:max-w-sm" />
           {userFilter?.enabled && <Select value={selectedUser} onValueChange={setSelectedUser}><SelectTrigger className="w-full md:w-64"><SelectValue placeholder={userFilter.placeholder ?? "Clasificar por usuario"} /></SelectTrigger><SelectContent><SelectItem value="todos">Todos los usuarios</SelectItem>{userOptions.map((usuario) => <SelectItem key={usuario} value={usuario}>{usuario}</SelectItem>)}</SelectContent></Select>}
         </div>
         <Button asChild className="w-full md:w-auto">

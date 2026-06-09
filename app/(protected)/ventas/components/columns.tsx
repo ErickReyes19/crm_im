@@ -30,7 +30,7 @@ export type VentaTableRow = {
   conEnvio?: boolean;
   envio?: number;
   canEditEstado?: boolean;
-  cliente?: { nombre: string; apellido: string } | null;
+  cliente?: { nombre: string; apellido: string; ciudad?: string; numero?: string } | null;
   usuario?: { id: string; usuario: string; nombre: string | null } | null;
   usuarioFiltro: string;
   productos?: Array<{ cantidad: number; subtotal: number; producto?: { nombre: string } | null }>;

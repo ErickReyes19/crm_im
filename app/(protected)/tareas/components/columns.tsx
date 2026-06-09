@@ -15,7 +15,7 @@ export type TareaTableRow = {
   descripcion: string | null;
   estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA";
   fechaObjetivo: Date;
-  nota: { cliente: { nombre: string; apellido: string } };
+  nota: { cliente: { nombre: string; apellido: string; ciudad: string; numero: string } };
   usuario: { id: string; usuario: string; nombre: string | null };
   usuarioFiltro: string;
 };

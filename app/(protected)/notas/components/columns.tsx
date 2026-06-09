@@ -13,7 +13,7 @@ export type NotaTableRow = {
   contenido: string;
   createAt: Date;
   evidencias: { id: string }[];
-  cliente: { nombre: string; apellido: string };
+  cliente: { nombre: string; apellido: string; ciudad: string; numero: string };
   usuario: { usuario: string; nombre: string | null };
   usuarioFiltro: string;
 };

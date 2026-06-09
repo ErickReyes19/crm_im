@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -22,8 +23,9 @@ type UsuarioOption = { id: string; usuario: string; nombre?: string | null };
 type NotaOption = { id: string; contenido: string; clienteId: string; cliente: { nombre: string; apellido: string } };
 type TareaInitialData = Partial<TareaFormOutput> & { clienteId?: string };
 
-export function Formulario({ clientes, usuarios, currentUserId, notasIniciales = [], initialData, isUpdate = false }: { clientes: ClienteOption[]; usuarios: UsuarioOption[]; currentUserId: string; notasIniciales?: NotaOption[]; initialData?: TareaInitialData; isUpdate?: boolean }) {
+export function Formulario({ clientes, usuarios, currentUserId, notasIniciales = [], initialData, isUpdate = false, returnTo, canCreateNota = false }: { clientes: ClienteOption[]; usuarios: UsuarioOption[]; currentUserId: string; notasIniciales?: NotaOption[]; initialData?: TareaInitialData; isUpdate?: boolean; returnTo?: string; canCreateNota?: boolean }) {
   const router = useRouter();
+  const cancelPath = returnTo || "/tareas";
   const clienteInicial = clientes.find((cliente) => cliente.id === initialData?.clienteId);
   const defaultUsuarioId = clienteInicial?.usuarioAsignadoId ?? currentUserId ?? (usuarios.length === 1 ? usuarios[0].id : "");
   const [clienteId, setClienteId] = useState(initialData?.clienteId ?? "");
@@ -89,7 +91,7 @@ export function Formulario({ clientes, usuarios, currentUserId, notasIniciales =
       if (isUpdate) await updateTarea(data);
       else await createTarea(data);
       toast.success(isUpdate ? "Tarea actualizada" : "Tarea creada");
-      router.push("/tareas");
+      router.push(cancelPath);
       router.refresh();
     } catch (error) {
       setIsSaving(false);
@@ -137,11 +139,38 @@ export function Formulario({ clientes, usuarios, currentUserId, notasIniciales =
       <FieldDescription>Primero selecciona el cliente para cargar solo sus notas visibles.</FieldDescription>
     </Field>
 
-    <Controller name="notaId" control={form.control} render={({ field, fieldState }) => <Field data-invalid={fieldState.invalid}><FieldLabel>Nota relacionada</FieldLabel><FieldContent><Select value={field.value} onValueChange={field.onChange} disabled={!clienteId || isPending}><SelectTrigger><SelectValue placeholder={isPending ? "Cargando notas..." : "Selecciona una nota"} /></SelectTrigger><SelectContent>{notas.map((n) => <SelectItem key={n.id} value={n.id}>{n.cliente.nombre} {n.cliente.apellido} - {n.contenido.slice(0, 40)}</SelectItem>)}</SelectContent></Select></FieldContent><FieldDescription>La tarea se amarra a una nota, y la nota al cliente.</FieldDescription>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Field>} />
+    <Controller name="notaId" control={form.control} render={({ field, fieldState }) => (
+      <Field data-invalid={fieldState.invalid}>
+        <FieldLabel>Nota relacionada</FieldLabel>
+        <FieldContent>
+          <Select value={field.value} onValueChange={field.onChange} disabled={!clienteId || isPending || notas.length === 0}>
+            <SelectTrigger><SelectValue placeholder={isPending ? "Cargando notas..." : notas.length === 0 ? "Sin notas disponibles" : "Selecciona una nota"} /></SelectTrigger>
+            <SelectContent>{notas.map((n) => <SelectItem key={n.id} value={n.id}>{n.cliente.nombre} {n.cliente.apellido} - {n.contenido.slice(0, 40)}</SelectItem>)}</SelectContent>
+          </Select>
+        </FieldContent>
+        <FieldDescription>
+          {clienteId && !isPending && notas.length === 0 ? (
+            <>
+              Este cliente no tiene notas.{" "}
+              {canCreateNota ? (
+                <Link href={`/notas/create?clienteId=${clienteId}${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`} className="font-medium underline underline-offset-2">
+                  Crear una nota primero
+                </Link>
+              ) : (
+                "Crea una nota antes de registrar la tarea."
+              )}
+            </>
+          ) : (
+            "La tarea se amarra a una nota, y la nota al cliente."
+          )}
+        </FieldDescription>
+        {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+      </Field>
+    )} />
     <Controller name="titulo" control={form.control} render={({ field, fieldState }) => <Field data-invalid={fieldState.invalid}><FieldLabel>Título</FieldLabel><FieldContent><Input {...field} value={field.value ?? ""} /></FieldContent>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Field>} />
     <Controller name="descripcion" control={form.control} render={({ field }) => <Field><FieldLabel>Descripción</FieldLabel><FieldContent><Textarea rows={4} {...field} value={field.value ?? ""} /></FieldContent></Field>} />
     <Controller name="fechaObjetivo" control={form.control} render={({ field, fieldState }) => <Field data-invalid={fieldState.invalid}><FieldLabel>Fecha de la tarea</FieldLabel><FieldContent><Input type="date" value={field.value ? formatHondurasInputDate(field.value as string | number | Date) : ""} onChange={(e) => field.onChange(new Date(`${e.target.value}T00:00:00`))} /></FieldContent>{fieldState.invalid && <FieldError errors={[fieldState.error]} />}</Field>} />
     <Controller name="estado" control={form.control} render={({ field }) => <Field><FieldLabel>Estado</FieldLabel><FieldContent><Select value={field.value} onValueChange={field.onChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="PENDIENTE">Pendiente</SelectItem><SelectItem value="EN_PROGRESO">En progreso</SelectItem><SelectItem value="COMPLETADA">Completada</SelectItem></SelectContent></Select></FieldContent></Field>} />
-    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.push('/tareas')}>Cancelar</Button><Button type="submit" disabled={isSaving || form.formState.isSubmitting}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button></div>
+    <div className="flex justify-end gap-3"><Button type="button" variant="outline" onClick={() => router.push(cancelPath)}>Cancelar</Button><Button type="submit" disabled={isSaving || form.formState.isSubmitting}>{isSaving || form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</> : isUpdate ? "Actualizar" : "Crear"}</Button></div>
   </form>;
 }

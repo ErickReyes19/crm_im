@@ -50,6 +50,29 @@ export async function getVentas(range?: ListDateRangeInput) {
   });
 }
 
+export async function getVentasByClienteId(clienteId: string) {
+  if (!clienteId) return [];
+
+  const session = await getCurrentUser();
+  const scopedUserIds = await getScopedUserIds(session);
+  const cliente = await prisma.cliente.findFirst({
+    where: { id: clienteId, usuarioAsignadoId: { in: scopedUserIds } },
+    select: { id: true },
+  });
+  if (!cliente) return [];
+
+  const ventaScopeWhere = await getVentaScopeWhere(session);
+
+  return prisma.venta.findMany({
+    where: { ...ventaScopeWhere, clienteId },
+    include: {
+      usuario: { select: { id: true, usuario: true, nombre: true } },
+      productos: { include: { producto: { select: { id: true, nombre: true } } } },
+    },
+    orderBy: { createAt: "asc" },
+  });
+}
+
 export async function getVentaById(id: string) {
   const session = await getCurrentUser();
   const ventaScopeWhere = await getVentaScopeWhere(session);
@@ -182,6 +205,7 @@ export async function createVenta(data: Venta) {
   revalidatePath("/ventas");
   revalidatePath("/productos");
   revalidatePath("/dashboard");
+  revalidatePath(`/clientes/${data.clienteId}/profile`);
   return { id: venta.id, total: Number(venta.total) };
 }
 
@@ -230,6 +254,7 @@ export async function updateVenta(data: Venta) {
   revalidatePath("/ventas");
   revalidatePath("/productos");
   revalidatePath("/dashboard");
+  revalidatePath(`/clientes/${data.clienteId}/profile`);
   return { id: venta.id, total: Number(venta.total) };
 }
 
