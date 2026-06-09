@@ -2,7 +2,7 @@ import { getSession } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import DateRangeFilter from "@/components/date-range-filter";
 import NoAcceso from "@/components/noAccess";
-import { getUserDisplayName, isSuperAdminSession } from "@/lib/access-scope";
+import { getSessionDisplayName, getUserDisplayName, isSuperAdminSession } from "@/lib/access-scope";
 import { resolveListDateRange } from "@/lib/list-date-range";
 import { StickyNote } from "lucide-react";
 import { getNotas } from "./actions";
@@ -22,5 +22,5 @@ export default async function NotasPage({ searchParams }: { searchParams: NotasS
   const data: NotaTableRow[] = notas.map((nota) => ({ ...nota, usuarioFiltro: getUserDisplayName(nota.usuario) }));
   const showUserFilter = isSuperAdminSession(session!) || permisos.includes("gestionar_mi_equipo");
 
-  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={StickyNote} description="Notas comerciales por cliente" screenName="Notas" /><DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} baseHref="/notas" /><DataTable columns={columns} data={data} userFilter={{ enabled: showUserFilter, placeholder: "Ver notas por usuario" }} /></div>;
+  return <div className="container mx-auto py-2 space-y-4"><HeaderComponent Icon={StickyNote} description="Notas comerciales por cliente" screenName="Notas" /><DateRangeFilter from={dateRange.fromInput} to={dateRange.toInput} baseHref="/notas" /><DataTable columns={columns} data={data} userFilter={{ enabled: showUserFilter, placeholder: "Ver notas por usuario", defaultSelectedUser: showUserFilter ? getSessionDisplayName(session!) : undefined }} /></div>;
 }

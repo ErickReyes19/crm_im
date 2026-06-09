@@ -62,3 +62,7 @@ export async function getScopedUsers(session: UsuarioSesion): Promise<Array<{ id
 export function getUserDisplayName(usuario: { usuario: string; nombre?: string | null }) {
   return usuario.nombre?.trim() ? `${usuario.nombre} (${usuario.usuario})` : usuario.usuario;
 }
+
+export function getSessionDisplayName(session: UsuarioSesion) {
+  return getUserDisplayName({ usuario: session.User, nombre: session.Nombre });
+}

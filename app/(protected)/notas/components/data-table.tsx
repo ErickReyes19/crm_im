@@ -14,6 +14,7 @@ import * as React from "react";
 type UserFilter = {
   enabled: boolean;
   placeholder?: string;
+  defaultSelectedUser?: string;
 };
 
 type UserFilterableRow = { usuarioFiltro?: string };
@@ -26,12 +27,16 @@ export function DataTable<TData, TValue>({ columns, data, userFilter }: { column
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters] = React.useState<ColumnFiltersState>([]);
   const [globalFilter, setGlobalFilter] = React.useState("");
-  const [selectedUser, setSelectedUser] = React.useState("todos");
+  const [selectedUser, setSelectedUser] = React.useState(userFilter?.defaultSelectedUser ?? "todos");
   const userOptions = React.useMemo(() => {
     if (!userFilter?.enabled) return [];
 
-    return [...new Set(data.map((row) => getUserFilterValue(row)).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  }, [data, userFilter?.enabled]);
+    const options = [...new Set(data.map((row) => getUserFilterValue(row)).filter(Boolean))];
+    if (userFilter.defaultSelectedUser && !options.includes(userFilter.defaultSelectedUser)) {
+      options.push(userFilter.defaultSelectedUser);
+    }
+    return options.sort((a, b) => a.localeCompare(b));
+  }, [data, userFilter?.enabled, userFilter?.defaultSelectedUser]);
   const filteredData = React.useMemo(() => {
     if (!userFilter?.enabled || selectedUser === "todos") return data;
 

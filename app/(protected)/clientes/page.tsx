@@ -1,4 +1,4 @@
-import { getSessionPermisos } from "@/auth";
+import { getSession, getSessionPermisos } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import NoAcceso from "@/components/noAccess";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,13 @@ import ClientesListMobile from "./components/clientes-list-mobile";
 import ClientesTable from "./components/clientes-table";
 
 export default async function ClientesPage() {
-  const permisos = await getSessionPermisos();
+  const session = await getSession();
+  const permisos = session?.Permiso;
   if (!permisos?.includes("ver_clientes")) return <NoAcceso />;
 
   const data = await getClientes();
   const canViewClientsByUser = permisos.includes("ver_todos_clientes") || permisos.includes("gestionar_mi_equipo") || permisos.includes("super_admin");
+  const defaultSelectedUser = canViewClientsByUser ? session?.User : undefined;
 
   return (
     <div className="container mx-auto py-2">
@@ -25,8 +27,8 @@ export default async function ClientesPage() {
           </Button>
         </div>
       )}
-      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={canViewClientsByUser} /></div>
-      <div className="block md:hidden"><ClientesListMobile clientes={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={canViewClientsByUser} /></div>
+      <div className="hidden md:block"><ClientesTable data={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={canViewClientsByUser} defaultSelectedUser={defaultSelectedUser} /></div>
+      <div className="block md:hidden"><ClientesListMobile clientes={data} canEdit={permisos.includes("editar_cliente")} canViewAllClients={canViewClientsByUser} defaultSelectedUser={defaultSelectedUser} /></div>
     </div>
   );
 }

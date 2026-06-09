@@ -11,14 +11,18 @@ type ClienteMobileRow = Cliente & {
   usuarioAsignado?: { id: string; usuario: string } | null;
 };
 
-export default function ClientesListMobile({ clientes, canEdit, canViewAllClients }: { clientes: ClienteMobileRow[]; canEdit: boolean; canViewAllClients?: boolean }) {
+export default function ClientesListMobile({ clientes, canEdit, canViewAllClients, defaultSelectedUser }: { clientes: ClienteMobileRow[]; canEdit: boolean; canViewAllClients?: boolean; defaultSelectedUser?: string }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState("todos");
+  const [selectedUser, setSelectedUser] = useState(defaultSelectedUser ?? "todos");
   const userOptions = useMemo(() => {
     if (!canViewAllClients) return [];
 
-    return [...new Set(clientes.map((cliente) => cliente.usuarioAsignado?.usuario).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b));
-  }, [clientes, canViewAllClients]);
+    const options = [...new Set(clientes.map((cliente) => cliente.usuarioAsignado?.usuario).filter(Boolean) as string[])];
+    if (defaultSelectedUser && !options.includes(defaultSelectedUser)) {
+      options.push(defaultSelectedUser);
+    }
+    return options.sort((a, b) => a.localeCompare(b));
+  }, [clientes, canViewAllClients, defaultSelectedUser]);
   const filtered = clientes.filter((c) => {
     if (canViewAllClients && selectedUser !== "todos" && c.usuarioAsignado?.usuario !== selectedUser) return false;
 

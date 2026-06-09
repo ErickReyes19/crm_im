@@ -46,12 +46,16 @@ function EstadoVentaMobile({ venta }: { venta: VentaTableRow }) {
 
 export default function VentasListMobile({ ventas, userFilter }: { ventas: VentaTableRow[]; userFilter?: UserFilter }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedUser, setSelectedUser] = useState("todos");
+  const [selectedUser, setSelectedUser] = useState(userFilter?.defaultSelectedUser ?? "todos");
   const userOptions = useMemo(() => {
     if (!userFilter?.enabled) return [];
 
-    return [...new Set(ventas.map((venta) => venta.usuarioFiltro).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-  }, [ventas, userFilter?.enabled]);
+    const options = [...new Set(ventas.map((venta) => venta.usuarioFiltro).filter(Boolean))];
+    if (userFilter.defaultSelectedUser && !options.includes(userFilter.defaultSelectedUser)) {
+      options.push(userFilter.defaultSelectedUser);
+    }
+    return options.sort((a, b) => a.localeCompare(b));
+  }, [ventas, userFilter?.enabled, userFilter?.defaultSelectedUser]);
   const filtered = ventas.filter((venta) => {
     if (userFilter?.enabled && selectedUser !== "todos" && venta.usuarioFiltro !== selectedUser) return false;
 

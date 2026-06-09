@@ -2,7 +2,7 @@ import { getSession } from "@/auth";
 import HeaderComponent from "@/components/HeaderComponent";
 import DateRangeFilter from "@/components/date-range-filter";
 import NoAcceso from "@/components/noAccess";
-import { getUserDisplayName, isSuperAdminSession } from "@/lib/access-scope";
+import { getSessionDisplayName, getUserDisplayName, isSuperAdminSession } from "@/lib/access-scope";
 import { resolveListDateRange } from "@/lib/list-date-range";
 import { ListCheck } from "lucide-react";
 import { getVentas } from "./actions";
@@ -22,7 +22,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Venta
   const puedeEditar = permisos.includes("editar_venta");
   const showUserFilter = isSuperAdminSession(session!) || permisos.includes("gestionar_mi_equipo");
   const data: VentaTableRow[] = (await getVentas({ from: dateRange.fromInput, to: dateRange.toInput })).map((venta: Awaited<ReturnType<typeof getVentas>>[number]) => ({ ...venta, canEditEstado: puedeEditar, total: Number(venta.total), isv: Number(venta.isv), envio: Number(venta.envio), usuarioFiltro: getUserDisplayName(venta.usuario), productos: venta.productos.map((detalle) => ({ ...detalle, precioUnitario: Number(detalle.precioUnitario), subtotal: Number(detalle.subtotal) })) }));
-  const userFilter = { enabled: showUserFilter, placeholder: "Ver ventas por vendedor" };
+  const userFilter = { enabled: showUserFilter, placeholder: "Ver ventas por vendedor", defaultSelectedUser: showUserFilter ? getSessionDisplayName(session!) : undefined };
 
   return (
     <div className="container mx-auto space-y-4 py-2">
