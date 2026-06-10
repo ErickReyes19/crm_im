@@ -2,6 +2,7 @@ import { getSession } from "@/auth";
 import { Prisma } from "@/lib/generated/prisma";
 import { getScopedUserIds } from "@/lib/access-scope";
 import { formatHondurasInputDate } from "@/lib/date-format";
+import { getDateRangePresetInputs, resolveListDateRange } from "@/lib/list-date-range";
 import { prisma } from "@/lib/prisma";
 
 export const DASHBOARD_ALL_USERS_VALUE = "__all__";
@@ -34,41 +35,17 @@ export type DashboardMetrics = {
   topClientesSinVentas: Array<{ id: string; nombre: string; ultimaVenta: string | null }>;
   clientesUltimaNota: Array<{ id: string; nombre: string; ultimaNota: string | null; diasDesdeUltimaNota: number | null }>;
   tareasHoy: Array<{ id: string; titulo: string; estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA"; cliente: string; fechaObjetivo: string }>;
+  fechaHoy: string;
 };
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
-function toInputDate(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function parseInputDate(value: string | undefined, fallback: Date) {
-  if (!value) return fallback;
-
-  const parsed = new Date(`${value}T00:00:00.000Z`);
-  return Number.isNaN(parsed.getTime()) ? fallback : parsed;
-}
-
 function buildRange(range: DashboardDateRange) {
-  const today = new Date();
-  const defaultFrom = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
-  const defaultTo = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-  let from = parseInputDate(range.from, defaultFrom);
-  let to = parseInputDate(range.to, defaultTo);
-
-  if (from > to) {
-    [from, to] = [to, from];
-  }
-
-  const toExclusive = new Date(to.getTime() + DAY_IN_MS);
-
-  return {
-    from,
-    to,
-    toExclusive,
-    fromInput: toInputDate(from),
-    toInput: toInputDate(to),
-  };
+  const defaultMonth = getDateRangePresetInputs("month");
+  return resolveListDateRange({
+    from: range.from || defaultMonth.from,
+    to: range.to || defaultMonth.to,
+  });
 }
 
 function decimalToNumber(value: Prisma.Decimal | number | null | undefined) {
@@ -81,21 +58,11 @@ function isSuperAdminSession(session: Awaited<ReturnType<typeof getSession>>) {
 }
 
 export function getCurrentMonthRange() {
-  const today = new Date();
-  const from = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
-  const to = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-
-  return { from: toInputDate(from), to: toInputDate(to) };
+  return getDateRangePresetInputs("month");
 }
 
 export function getCurrentWeekRange() {
-  const today = new Date();
-  const utcToday = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
-  const day = utcToday.getUTCDay();
-  const daysFromMonday = day === 0 ? 6 : day - 1;
-  const from = new Date(utcToday.getTime() - daysFromMonday * DAY_IN_MS);
-
-  return { from: toInputDate(from), to: toInputDate(utcToday) };
+  return getDateRangePresetInputs("week");
 }
 
 export async function getDashboardUsuarios(): Promise<DashboardUsuarioOption[]> {
@@ -140,9 +107,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
   const clienteWhere: Prisma.ClienteWhereInput = { usuarioAsignadoId: { in: usuariosObjetivo } };
   const ventaProductoWhere: Prisma.VentaProductoWhereInput = { venta: ventaWhere };
 
-  const inicioHoy = new Date();
-  const hoyDesde = new Date(Date.UTC(inicioHoy.getUTCFullYear(), inicioHoy.getUTCMonth(), inicioHoy.getUTCDate()));
-  const hoyHasta = new Date(hoyDesde.getTime() + DAY_IN_MS);
+  const todayRange = resolveListDateRange(getDateRangePresetInputs("today"));
 
   const [ventasAggregate, totalClientes, totalVentas, totalProductos, productos, productosVendidosGroup, clientesVendidosGroup, clientesVisibles, tareasHoy] = await Promise.all([
     prisma.venta.aggregate({ where: ventaWhere, _sum: { total: true } }),
@@ -187,7 +152,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     prisma.tarea.findMany({
       where: {
         usuarioId: { in: usuariosObjetivo },
-        fechaObjetivo: { gte: hoyDesde, lt: hoyHasta },
+        fechaObjetivo: { gte: todayRange.from, lt: todayRange.toExclusive },
         estado: { not: "COMPLETADA" },
       },
       select: {
@@ -227,12 +192,14 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     : [];
   const clientesPorId = new Map(clientesTop.map((cliente) => [cliente.id, `${cliente.nombre} ${cliente.apellido}`]));
   const clientesConVentasEnRango = new Set(clientesVendidosGroup.map((item) => item.clienteId));
-  const hoyReferencia = new Date(Date.UTC(inicioHoy.getUTCFullYear(), inicioHoy.getUTCMonth(), inicioHoy.getUTCDate()));
   const clientesUltimaNota = clientesVisibles
     .map((cliente) => {
       const ultimaNota = cliente.notas[0]?.createAt ?? null;
       const diasDesdeUltimaNota = ultimaNota
-        ? Math.max(0, Math.floor((hoyReferencia.getTime() - new Date(Date.UTC(ultimaNota.getUTCFullYear(), ultimaNota.getUTCMonth(), ultimaNota.getUTCDate())).getTime()) / DAY_IN_MS))
+        ? Math.max(0, Math.floor((todayRange.from.getTime() - resolveListDateRange({
+          from: formatHondurasInputDate(ultimaNota),
+          to: formatHondurasInputDate(ultimaNota),
+        }).from.getTime()) / DAY_IN_MS))
         : null;
 
       return {
@@ -282,6 +249,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
       cliente: `${t.nota.cliente.nombre} ${t.nota.cliente.apellido}`.trim(),
       fechaObjetivo: formatHondurasInputDate(t.fechaObjetivo),
     })),
+    fechaHoy: todayRange.toInput,
     clientesUltimaNota: clientesUltimaNota.slice(0, 10),
     topClientesSinVentas: clientesVisibles
       .filter((cliente) => !clientesConVentasEnRango.has(cliente.id))

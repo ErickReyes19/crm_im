@@ -144,7 +144,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
       <Card className="border-yellow-300 bg-yellow-50/60 dark:bg-yellow-950/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300"><AlertTriangle className="h-5 w-5" />Alertas de tareas para hoy</CardTitle>
-          <CardDescription>Tareas con fecha objetivo del día actual ({metrics.range.to}).</CardDescription>
+          <CardDescription>Tareas con fecha objetivo del día actual ({metrics.fechaHoy}).</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
           {metrics.tareasHoy.length === 0 ? <EmptyState text="No tienes tareas pendientes para hoy." /> : metrics.tareasHoy.map((tarea) => (
