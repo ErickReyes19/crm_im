@@ -29,8 +29,8 @@ export type DashboardMetrics = {
     totalProductos: number;
     clientesSinNotas: number;
   };
-  productosMasVendidos: Array<{ id: string; nombre: string; cantidad: number; total: number }>;
-  productosMenosVendidos: Array<{ id: string; nombre: string; cantidad: number; total: number }>;
+  productosMasVendidos: Array<{ id: string; nombre: string; descripcion: string; cantidad: number; total: number }>;
+  productosMenosVendidos: Array<{ id: string; nombre: string; descripcion: string; cantidad: number; total: number }>;
   topClientesConMasVentas: Array<{ id: string; nombre: string; cantidadVentas: number; total: number }>;
   topClientesSinVentas: Array<{ id: string; nombre: string; ultimaVenta: string | null }>;
   clientesUltimaNota: Array<{ id: string; nombre: string; ultimaNota: string | null; diasDesdeUltimaNota: number | null }>;
@@ -116,7 +116,7 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     prisma.cliente.count({ where: clienteWhere }),
     prisma.venta.count({ where: ventaWhere }),
     prisma.producto.count({ where: { activo: true } }),
-    prisma.producto.findMany({ where: { activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: "asc" } }),
+    prisma.producto.findMany({ where: { activo: true }, select: { id: true, nombre: true, descripcion: true }, orderBy: { nombre: "asc" } }),
     prisma.ventaProducto.groupBy({
       by: ["productoId"],
       where: ventaProductoWhere,
@@ -169,18 +169,22 @@ export async function getDashboardMetrics(range: DashboardDateRange): Promise<Da
     }),
   ]);
 
-  const productosPorId = new Map(productos.map((producto) => [producto.id, producto.nombre]));
-  const productosVendidos = productosVendidosGroup.map((item) => ({
-    id: item.productoId,
-    nombre: productosPorId.get(item.productoId) ?? "Producto eliminado",
-    cantidad: item._sum.cantidad ?? 0,
-    total: decimalToNumber(item._sum.subtotal),
-  }));
+  const productosPorId = new Map(productos.map((producto) => [producto.id, { nombre: producto.nombre, descripcion: producto.descripcion }]));
+  const productosVendidos = productosVendidosGroup.map((item) => {
+    const producto = productosPorId.get(item.productoId);
+    return {
+      id: item.productoId,
+      nombre: producto?.nombre ?? "Producto eliminado",
+      descripcion: producto?.descripcion ?? "",
+      cantidad: item._sum.cantidad ?? 0,
+      total: decimalToNumber(item._sum.subtotal),
+    };
+  });
 
   const productosMenosVendidos = productos
     .map((producto) => {
       const vendido = productosVendidos.find((item) => item.id === producto.id);
-      return vendido ?? { id: producto.id, nombre: producto.nombre, cantidad: 0, total: 0 };
+      return vendido ?? { id: producto.id, nombre: producto.nombre, descripcion: producto.descripcion, cantidad: 0, total: 0 };
     })
     .sort((a, b) => a.cantidad - b.cantidad || a.nombre.localeCompare(b.nombre))
     .slice(0, 5);

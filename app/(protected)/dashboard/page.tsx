@@ -167,9 +167,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
           </CardHeader>
           <CardContent className="space-y-3">
             {metrics.productosMasVendidos.length === 0 ? <EmptyState text="No hay productos vendidos en este rango." /> : metrics.productosMasVendidos.map((producto, index) => (
-              <div key={producto.id} className="flex items-center justify-between rounded-3xl border p-3">
-                <div><p className="font-medium">{index + 1}. {producto.nombre}</p><p className="text-sm text-muted-foreground">{formatNumber(producto.cantidad)} unidades</p></div>
-                <span className="font-semibold">{formatCurrency(producto.total)}</span>
+              <div key={producto.id} className="flex items-center justify-between gap-3 rounded-3xl border p-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{index + 1}. {producto.nombre}</p>
+                  {producto.descripcion && <p className="text-sm text-muted-foreground line-clamp-2">{producto.descripcion}</p>}
+                  <p className="text-sm text-muted-foreground">{formatNumber(producto.cantidad)} unidades</p>
+                </div>
+                <span className="shrink-0 font-semibold">{formatCurrency(producto.total)}</span>
               </div>
             ))}
           </CardContent>
@@ -182,9 +186,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: Da
           </CardHeader>
           <CardContent className="space-y-3">
             {metrics.productosMenosVendidos.length === 0 ? <EmptyState text="No hay productos activos para analizar." /> : metrics.productosMenosVendidos.map((producto, index) => (
-              <div key={producto.id} className="flex items-center justify-between rounded-3xl border p-3">
-                <div><p className="font-medium">{index + 1}. {producto.nombre}</p><p className="text-sm text-muted-foreground">{formatNumber(producto.cantidad)} unidades</p></div>
-                <span className="font-semibold">{formatCurrency(producto.total)}</span>
+              <div key={producto.id} className="flex items-center justify-between gap-3 rounded-3xl border p-3">
+                <div className="min-w-0">
+                  <p className="font-medium">{index + 1}. {producto.nombre}</p>
+                  {producto.descripcion && <p className="text-sm text-muted-foreground line-clamp-2">{producto.descripcion}</p>}
+                  <p className="text-sm text-muted-foreground">{formatNumber(producto.cantidad)} unidades</p>
+                </div>
+                <span className="shrink-0 font-semibold">{formatCurrency(producto.total)}</span>
               </div>
             ))}
           </CardContent>
