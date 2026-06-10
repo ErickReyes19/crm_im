@@ -19,3 +19,7 @@ export const ProductoSchema = z.object({
 
 export type Producto = z.output<typeof ProductoSchema>;
 export type ProductoFormValues = z.input<typeof ProductoSchema>;
+
+export function getProductoLabel(producto: { nombre: string; descripcion?: string | null }) {
+  return producto.descripcion ? `${producto.nombre} - ${producto.descripcion}` : producto.nombre;
+}

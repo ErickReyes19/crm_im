@@ -2,6 +2,7 @@
 "use client";
 
 import { defaultTareaInlineValues, InlineTareaSection, type TareaInlineValues } from "@/app/(protected)/components/inline-tarea-section";
+import { ImagePreview } from "@/components/image-preview";
 import { createTarea } from "@/app/(protected)/tareas/actions";
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldError, FieldLabel } from "@/components/ui/field";
@@ -201,7 +202,7 @@ export function Formulario({ clientes, usuarios, currentUserId, initialData, isU
     <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
       {evidencias.map((img, i) => (
         <div key={`${img.ubicacion}-${i}`} className="relative overflow-hidden rounded border">
-          <img src={mediaUrl(img.ubicacion)} alt={img.nombre || `Evidencia ${i + 1}`} className="h-24 w-full object-cover" />
+          <ImagePreview src={mediaUrl(img.ubicacion)} alt={img.nombre || `Evidencia ${i + 1}`} />
           <Button type="button" variant="outline" size="icon" className="absolute right-1 top-1 h-7 w-7 bg-background/90" onClick={() => removeEvidencia(i)} disabled={isDeleting}>
             <X className="h-4 w-4" />
           </Button>

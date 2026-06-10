@@ -1,6 +1,8 @@
 "use client";
 
+import { getProductoLabel } from "@/app/(protected)/productos/schema";
 import { cambiarEstadoVenta } from "@/app/(protected)/ventas/actions";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -10,6 +12,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { toast } from "sonner";
+
+function formatHnl(value: number) {
+  return Number(value).toLocaleString("es-DO", { style: "currency", currency: "HNL" });
+}
 
 export type EstadoVenta = "PROCESO" | "ENVIO" | "ENTREGADA";
 
@@ -33,7 +39,7 @@ export type VentaTableRow = {
   cliente?: { nombre: string; apellido: string; ciudad?: string; numero?: string } | null;
   usuario?: { id: string; usuario: string; nombre: string | null } | null;
   usuarioFiltro: string;
-  productos?: Array<{ cantidad: number; subtotal: number; producto?: { nombre: string } | null }>;
+  productos?: Array<{ cantidad: number; subtotal: number; producto?: { nombre: string; descripcion?: string } | null }>;
 };
 
 function CambiarEstadoActions({ venta }: { venta: VentaTableRow }) {
@@ -80,57 +86,75 @@ export const columns: ColumnDef<VentaTableRow>[] = [
     header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Cliente <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
     cell: ({ row }) => {
       const cliente = row.original.cliente;
-      return cliente ? `${cliente.nombre} ${cliente.apellido}` : "Sin cliente";
+      return (
+        <div className="min-w-0 max-w-48">
+          <p className="truncate font-medium">{cliente ? `${cliente.nombre} ${cliente.apellido}` : "Sin cliente"}</p>
+          <p className="truncate text-xs text-muted-foreground">{row.original.usuarioFiltro || "Usuario actual"}</p>
+        </div>
+      );
     },
-  },
-  {
-    id: "usuario",
-    accessorFn: (venta) => venta.usuarioFiltro,
-    header: "Vendedor",
-    cell: ({ row }) => row.original.usuarioFiltro || "Usuario actual",
+    meta: { className: "w-[22%] whitespace-normal" },
   },
   {
     accessorKey: "total",
-    header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Total <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
-    cell: ({ row }) => Number(row.original.total).toLocaleString("es-DO", { style: "currency", currency: "HNL" }),
+    header: ({ column }) => <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>Monto <ArrowUpDown className="ml-2 h-4 w-4" /></Button>,
+    cell: ({ row }) => (
+      <div className="min-w-26">
+        <p className="font-medium">{formatHnl(row.original.total ?? 0)}</p>
+        <p className="text-xs text-muted-foreground">ISV: {formatHnl(row.original.isv ?? 0)}</p>
+        <p className="text-xs text-muted-foreground">
+          {row.original.conEnvio ? `Envío: ${formatHnl(row.original.envio ?? 0)}` : "Sin envío"}
+        </p>
+      </div>
+    ),
+    meta: { className: "w-[16%] whitespace-normal" },
   },
-  { id: "tipoDocumento", header: "Documento", cell: ({ row }) => row.original.tipoDocumento === "FACTURA" ? "Factura" : "Recibo" },
-  { id: "isv", header: "ISV", cell: ({ row }) => Number(row.original.isv ?? 0).toLocaleString("es-DO", { style: "currency", currency: "HNL" }) },
-  { id: "envio", header: "Envío", cell: ({ row }) => row.original.conEnvio ? Number(row.original.envio ?? 0).toLocaleString("es-DO", { style: "currency", currency: "HNL" }) : "Sin envío" },
   {
-    id: "productosResumen",
-    header: "Productos",
+    id: "detalle",
+    header: "Detalle",
     cell: ({ row }) => {
       const productos = row.original.productos ?? [];
-      const summary = productos.length
-        ? productos.map((detalle) => `${detalle.cantidad} x ${detalle.producto?.nombre ?? "Producto"}`).join(", ")
-        : "Sin productos";
+      const documento = row.original.tipoDocumento === "FACTURA" ? "Factura" : "Recibo";
+      const pago = row.original.metodoPago === "TRANSFERENCIA" ? "Transferencia" : "Efectivo";
 
-      return productos.length ? (
-        <HoverCard>
-          <HoverCardTrigger asChild>
-            <span className="inline-block max-w-[20rem] wrap-break-word line-clamp-2 cursor-help">{summary}</span>
-          </HoverCardTrigger>
-          <HoverCardContent>
-            <div className="space-y-1 text-sm text-foreground">
-              {productos.map((detalle, index) => (
-                <p key={index} className="whitespace-pre-wrap wrap-break-word">
-                  {detalle.cantidad} x {detalle.producto?.nombre ?? "Producto"}
-                </p>
-              ))}
-            </div>
-          </HoverCardContent>
-        </HoverCard>
-      ) : (
-        <span className="text-muted-foreground">Sin productos</span>
+      return (
+        <div className="min-w-0 max-w-56 space-y-1">
+          {productos.length ? (
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <button type="button" className="text-sm underline-offset-2 hover:underline">
+                  {productos.length} producto{productos.length === 1 ? "" : "s"}
+                </button>
+              </HoverCardTrigger>
+              <HoverCardContent>
+                <div className="space-y-1 text-sm text-foreground">
+                  {productos.map((detalle, index) => (
+                    <p key={index} className="whitespace-pre-wrap wrap-break-word">
+                      {detalle.cantidad} x {detalle.producto ? getProductoLabel(detalle.producto) : "Producto"}
+                    </p>
+                  ))}
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          ) : (
+            <span className="text-sm text-muted-foreground">Sin productos</span>
+          )}
+          <p className="truncate text-xs text-muted-foreground">{documento} · {pago}</p>
+        </div>
       );
     },
+    meta: { className: "w-[28%] whitespace-normal" },
   },
-  { accessorKey: "estado", header: "Estado" },
-  { id: "metodoPago", header: "Pago", cell: ({ row }) => row.original.metodoPago === "TRANSFERENCIA" ? "Transferencia" : "Efectivo" },
+  {
+    accessorKey: "estado",
+    header: "Estado",
+    cell: ({ row }) => <Badge variant="outline">{row.original.estado}</Badge>,
+    meta: { className: "w-[14%] whitespace-normal" },
+  },
   {
     id: "actions",
-    header: "Acciones",
+    header: "",
     cell: ({ row }) => <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end"><DropdownMenuLabel>Acciones</DropdownMenuLabel><Link href={`/ventas/${row.original.id}`}><DropdownMenuItem>Ver venta</DropdownMenuItem></Link><Link href={`/ventas/${row.original.id}/edit`}><DropdownMenuItem>Editar</DropdownMenuItem></Link><CambiarEstadoActions venta={row.original} /></DropdownMenuContent></DropdownMenu>,
+    meta: { className: "w-[4rem]" },
   },
 ];

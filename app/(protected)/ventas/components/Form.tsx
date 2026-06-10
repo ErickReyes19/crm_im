@@ -1,5 +1,6 @@
 "use client";
 
+import { ImagePreview } from "@/components/image-preview";
 import { Button } from "@/components/ui/button";
 import { Field, FieldContent, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -323,7 +324,11 @@ export function Formulario({ isUpdate, initialData, clientes, usuarios, currentU
           {evidenciaTransferencia && (
             <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] items-start">
               <div className="overflow-hidden rounded-xl border">
-                <img src={`/api/media/${evidenciaTransferencia}`} alt={form.getValues("evidenciaTransferenciaNombre") || "Evidencia"} className="h-36 w-full object-cover" />
+                <ImagePreview
+                  src={`/api/media/${evidenciaTransferencia}`}
+                  alt={form.getValues("evidenciaTransferenciaNombre") || "Evidencia"}
+                  thumbnailClassName="h-36"
+                />
               </div>
               <Button type="button" variant="outline" className="h-10 self-start" disabled={isDeletingEvidencia} onClick={handleRemoveEvidencia}>
                 {isDeletingEvidencia ? "Eliminando..." : "Eliminar"}
