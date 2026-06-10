@@ -101,9 +101,12 @@ export function DataTable<TData, TValue>({ columns, data, userFilter }: DataTabl
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end space-x-2 py-4">
-        <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Anterior</Button>
-        <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Siguiente</Button>
+      <div className="flex items-center justify-between py-4">
+        <p className="text-sm text-muted-foreground">{table.getFilteredRowModel().rows.length} venta{table.getFilteredRowModel().rows.length === 1 ? "" : "s"}</p>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>Anterior</Button>
+          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>Siguiente</Button>
+        </div>
       </div>
     </div>
   );
