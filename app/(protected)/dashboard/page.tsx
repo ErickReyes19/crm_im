@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { AlertTriangle, BarChart3, CalendarDays, FileText, HandCoins, Package, ShoppingCart, Users } from "lucide-react";
 import Link from "next/link";
 import { DASHBOARD_ALL_USERS_VALUE, getCurrentMonthRange, getCurrentWeekRange, getDashboardMetrics, getDashboardUsuarios } from "./actions";
+import type { ListDateRangeInput } from "@/lib/list-date-range";
 
 type DashboardSearchParams = Promise<{ from?: string; to?: string; usuarioId?: string }>;
 
@@ -28,7 +29,8 @@ function formatDiasSinNota(value: number | null) {
   return `Hace ${formatNumber(value)} días`;
 }
 
-function rangeHref(range: { from: string; to: string }, usuarioId?: string) {
+function rangeHref(range: ListDateRangeInput, usuarioId?: string) {
+  if (!range.from || !range.to) return "/dashboard";
   const usuarioQuery = usuarioId ? `&usuarioId=${usuarioId}` : "";
   return `/dashboard?from=${range.from}&to=${range.to}${usuarioQuery}`;
 }

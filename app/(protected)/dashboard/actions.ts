@@ -57,12 +57,14 @@ function isSuperAdminSession(session: Awaited<ReturnType<typeof getSession>>) {
   return rol === "super_admin" || rol === "super admin" || session?.Permiso?.includes("super_admin") === true;
 }
 
-export function getCurrentMonthRange() {
-  return getDateRangePresetInputs("month");
+export function getCurrentMonthRange(): { from: string; to: string } {
+  const range = getDateRangePresetInputs("month");
+  return { from: range.from!, to: range.to! };
 }
 
-export function getCurrentWeekRange() {
-  return getDateRangePresetInputs("week");
+export function getCurrentWeekRange(): { from: string; to: string } {
+  const range = getDateRangePresetInputs("week");
+  return { from: range.from!, to: range.to! };
 }
 
 export async function getDashboardUsuarios(): Promise<DashboardUsuarioOption[]> {
