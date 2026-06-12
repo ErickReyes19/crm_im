@@ -24,6 +24,28 @@ async function getTareaScopeWhere(session: Awaited<ReturnType<typeof getCurrentU
   return { usuarioId: { in: scopedUserIds } };
 }
 
+const ESTADO_ORDEN: Record<"PENDIENTE" | "EN_PROGRESO" | "COMPLETADA", number> = {
+  PENDIENTE: 0,
+  EN_PROGRESO: 1,
+  COMPLETADA: 2,
+};
+
+function compareTareasLista<
+  T extends {
+    estado: "PENDIENTE" | "EN_PROGRESO" | "COMPLETADA";
+    fechaObjetivo: Date;
+    usuario: { usuario: string };
+  },
+>(a: T, b: T) {
+  const estadoDiff = ESTADO_ORDEN[a.estado] - ESTADO_ORDEN[b.estado];
+  if (estadoDiff !== 0) return estadoDiff;
+
+  const usuarioDiff = a.usuario.usuario.localeCompare(b.usuario.usuario);
+  if (usuarioDiff !== 0) return usuarioDiff;
+
+  return new Date(a.fechaObjetivo).getTime() - new Date(b.fechaObjetivo).getTime();
+}
+
 export async function getClientesConNotasOpciones() {
   const { scopedUserIds } = await getScopedIdsForCurrentUser();
 
@@ -87,7 +109,7 @@ export async function getTareas(range?: ListDateRangeInput) {
   const tareaScopeWhere = await getTareaScopeWhere(session);
   const dateRange = resolveListDateRange(range);
 
-  return prisma.tarea.findMany({
+  const tareas = await prisma.tarea.findMany({
     where: { ...tareaScopeWhere, fechaObjetivo: { gte: dateRange.from, lt: dateRange.toExclusive } },
     include: {
       nota: { include: { cliente: { select: { nombre: true, apellido: true, ciudad: true, numero: true } } } },
@@ -95,6 +117,8 @@ export async function getTareas(range?: ListDateRangeInput) {
     },
     orderBy: [{ usuario: { usuario: "asc" } }, { fechaObjetivo: "asc" }],
   });
+
+  return tareas.sort(compareTareasLista);
 }
 
 export async function getTareaById(id: string) {
